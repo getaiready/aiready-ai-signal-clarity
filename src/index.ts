@@ -2,11 +2,19 @@ import { analyzePatterns } from '@aiready/pattern-detect';
 import { analyzeContext } from '@aiready/context-analyzer';
 import { analyzeConsistency } from '@aiready/consistency';
 import type { AnalysisResult, ScanOptions } from '@aiready/core';
+import {
+  calculateOverallScore,
+  type ToolScoringOutput,
+  type ScoringResult,
+  calculateTokenBudget,
+} from '@aiready/core';
+export type { ToolScoringOutput, ScoringResult };
 import type { ContextAnalysisResult } from '@aiready/context-analyzer';
 import type { DuplicatePattern } from '@aiready/pattern-detect';
-import type { ConsistencyReport } from '@aiready/consistency';
-
-import type { ConsistencyOptions } from '@aiready/consistency';
+import type {
+  ConsistencyReport,
+  ConsistencyOptions,
+} from '@aiready/consistency';
 
 export interface UnifiedAnalysisOptions extends ScanOptions {
   tools?: (
@@ -45,6 +53,7 @@ export interface UnifiedAnalysisResult {
     toolsRun: string[];
     executionTime: number;
   };
+  scoring?: ScoringResult;
 }
 
 // Severity ordering (higher number = more severe)
@@ -266,6 +275,184 @@ export async function analyzeUnified(
 
   result.summary.executionTime = Date.now() - startTime;
   return result;
+}
+
+export async function scoreUnified(
+  results: UnifiedAnalysisResult,
+  options: UnifiedAnalysisOptions
+): Promise<ScoringResult> {
+  const toolScores: Map<string, ToolScoringOutput> = new Map();
+
+  // Patterns score
+  if (results.duplicates) {
+    const { calculatePatternScore } = await import('@aiready/pattern-detect');
+    try {
+      const patternScore = calculatePatternScore(
+        results.duplicates,
+        results.patterns?.length || 0
+      );
+
+      // Calculate token budget for patterns (waste = duplication)
+      const wastedTokens = results.duplicates.reduce(
+        (sum: number, d: any) => sum + (d.tokenCost || 0),
+        0
+      );
+      patternScore.tokenBudget = calculateTokenBudget({
+        totalContextTokens: wastedTokens * 2, // Estimated context
+        wastedTokens: {
+          duplication: wastedTokens,
+          fragmentation: 0,
+          chattiness: 0,
+        },
+      });
+
+      toolScores.set('pattern-detect', patternScore);
+    } catch (err) {
+      void err;
+    }
+  }
+
+  // Context score
+  if (results.context) {
+    const { generateSummary: genContextSummary, calculateContextScore } =
+      await import('@aiready/context-analyzer');
+    try {
+      const ctxSummary = genContextSummary(results.context);
+      const contextScore = calculateContextScore(ctxSummary);
+
+      // Calculate token budget for context (waste = fragmentation + depth overhead)
+      contextScore.tokenBudget = calculateTokenBudget({
+        totalContextTokens: ctxSummary.totalTokens,
+        wastedTokens: {
+          duplication: 0,
+          fragmentation: ctxSummary.totalPotentialSavings || 0,
+          chattiness: 0,
+        },
+      });
+
+      toolScores.set('context-analyzer', contextScore);
+    } catch (err) {
+      void err;
+    }
+  }
+
+  // Consistency score
+  if (results.consistency) {
+    const { calculateConsistencyScore } = await import('@aiready/consistency');
+    try {
+      const issues =
+        results.consistency.results?.flatMap((r: any) => r.issues) || [];
+      const totalFiles = results.consistency.summary?.filesAnalyzed || 0;
+      const consistencyScore = calculateConsistencyScore(issues, totalFiles);
+      toolScores.set('consistency', consistencyScore);
+    } catch (err) {
+      void err;
+    }
+  }
+
+  // AI signal clarity score
+  if (results.aiSignalClarity) {
+    const { calculateAiSignalClarityScore } =
+      await import('@aiready/ai-signal-clarity');
+    try {
+      const hrScore = calculateAiSignalClarityScore(results.aiSignalClarity);
+      toolScores.set('ai-signal-clarity', hrScore);
+    } catch (err) {
+      void err;
+    }
+  }
+
+  // Agent grounding score
+  if (results.grounding) {
+    const { calculateGroundingScore } =
+      await import('@aiready/agent-grounding');
+    try {
+      const agScore = calculateGroundingScore(results.grounding);
+      toolScores.set('agent-grounding', agScore);
+    } catch (err) {
+      void err;
+    }
+  }
+
+  // Testability score
+  if (results.testability) {
+    const { calculateTestabilityScore } = await import('@aiready/testability');
+    try {
+      const tbScore = calculateTestabilityScore(results.testability);
+      toolScores.set('testability', tbScore);
+    } catch (err) {
+      void err;
+    }
+  }
+
+  // Documentation Drift score
+  if (results.docDrift) {
+    toolScores.set('doc-drift', {
+      toolName: 'doc-drift',
+      score: results.docDrift.summary.score,
+      rawMetrics: results.docDrift.rawData,
+      factors: [],
+      recommendations: (results.docDrift.recommendations || []).map(
+        (action: string) => ({
+          action,
+          estimatedImpact: 5,
+          priority: 'medium',
+        })
+      ),
+    });
+  }
+
+  // Dependency Health score
+  if (results.deps) {
+    toolScores.set('dependency-health', {
+      toolName: 'dependency-health',
+      score: results.deps.summary.score,
+      rawMetrics: results.deps.rawData,
+      factors: [],
+      recommendations: (results.deps.recommendations || []).map(
+        (action: string) => ({
+          action,
+          estimatedImpact: 5,
+          priority: 'medium',
+        })
+      ),
+    });
+  }
+
+  // Change Amplification score
+  if (results.changeAmplification) {
+    toolScores.set('change-amplification', {
+      toolName: 'change-amplification',
+      score: results.changeAmplification.summary.score,
+      rawMetrics: results.changeAmplification.rawData,
+      factors: [],
+      recommendations: (results.changeAmplification.recommendations || []).map(
+        (action: string) => ({
+          action,
+          estimatedImpact: 5,
+          priority: 'medium',
+        })
+      ),
+    });
+  }
+
+  // Handle case where toolScores is empty
+  if (toolScores.size === 0) {
+    return {
+      overall: 0,
+      rating: 'Critical',
+      timestamp: new Date().toISOString(),
+      toolsUsed: [],
+      breakdown: [],
+      calculation: {
+        formula: '0 / 0 = 0',
+        weights: {},
+        normalized: '0 / 0 = 0',
+      },
+    } as ScoringResult;
+  }
+
+  return calculateOverallScore(toolScores, options, undefined);
 }
 
 export function generateUnifiedSummary(result: UnifiedAnalysisResult): string {

@@ -24,7 +24,7 @@ import {
   getRepoMetadata,
   type ToolScoringOutput,
 } from '@aiready/core';
-import { analyzeUnified } from '../index';
+import { analyzeUnified, scoreUnified, type ScoringResult } from '../index';
 import {
   getReportTimestamp,
   warnIfGraphCapExceeded,
@@ -488,335 +488,162 @@ export async function scanAction(directory: string, options: ScanOptions) {
     void elapsedTime;
 
     // Calculate score if requested: assemble per-tool scoring outputs
-    let scoringResult: ReturnType<typeof calculateOverallScore> | undefined;
+    let scoringResult: ScoringResult | undefined;
     if (options.score || finalOptions.scoring?.showBreakdown) {
-      const toolScores: Map<string, ToolScoringOutput> = new Map();
+      scoringResult = await scoreUnified(results, finalOptions);
 
-      // Patterns score
-      if (results.duplicates) {
-        const { calculatePatternScore } =
-          await import('@aiready/pattern-detect');
-        try {
-          const patternScore = calculatePatternScore(
-            results.duplicates,
-            results.patterns?.length || 0
-          );
-
-          // Calculate token budget for patterns (waste = duplication)
-          const wastedTokens = results.duplicates.reduce(
-            (sum: number, d: any) => sum + (d.tokenCost || 0),
-            0
-          );
-          patternScore.tokenBudget = calculateTokenBudget({
-            totalContextTokens: wastedTokens * 2, // Estimated context
-            wastedTokens: {
-              duplication: wastedTokens,
-              fragmentation: 0,
-              chattiness: 0,
-            },
-          });
-
-          toolScores.set('pattern-detect', patternScore);
-        } catch (err) {
-          void err;
-        }
-      }
-
-      // Context score
-      if (results.context) {
-        const { generateSummary: genContextSummary, calculateContextScore } =
-          await import('@aiready/context-analyzer');
-        try {
-          const ctxSummary = genContextSummary(results.context);
-          const contextScore = calculateContextScore(ctxSummary);
-
-          // Calculate token budget for context (waste = fragmentation + depth overhead)
-          contextScore.tokenBudget = calculateTokenBudget({
-            totalContextTokens: ctxSummary.totalTokens,
-            wastedTokens: {
-              duplication: 0,
-              fragmentation: ctxSummary.totalPotentialSavings || 0,
-              chattiness: 0,
-            },
-          });
-
-          toolScores.set('context-analyzer', contextScore);
-        } catch (err) {
-          void err;
-        }
-      }
-
-      // Consistency score
-      if (results.consistency) {
-        const { calculateConsistencyScore } =
-          await import('@aiready/consistency');
-        try {
-          const issues =
-            results.consistency.results?.flatMap((r: any) => r.issues) || [];
-          const totalFiles = results.consistency.summary?.filesAnalyzed || 0;
-          const consistencyScore = calculateConsistencyScore(
-            issues,
-            totalFiles
-          );
-          toolScores.set('consistency', consistencyScore);
-        } catch (err) {
-          void err;
-        }
-      }
-
-      // AI signal clarity score
-      if (results.aiSignalClarity) {
-        const { calculateAiSignalClarityScore } =
-          await import('@aiready/ai-signal-clarity');
-        try {
-          const hrScore = calculateAiSignalClarityScore(
-            results.aiSignalClarity
-          );
-          toolScores.set('ai-signal-clarity', hrScore);
-        } catch (err) {
-          void err;
-        }
-      }
-
-      // Agent grounding score
-      if (results.grounding) {
-        const { calculateGroundingScore } =
-          await import('@aiready/agent-grounding');
-        try {
-          const agScore = calculateGroundingScore(results.grounding);
-          toolScores.set('agent-grounding', agScore);
-        } catch (err) {
-          void err;
-        }
-      }
-
-      // Testability score
-      if (results.testability) {
-        const { calculateTestabilityScore } =
-          await import('@aiready/testability');
-        try {
-          const tbScore = calculateTestabilityScore(results.testability);
-          toolScores.set('testability', tbScore);
-        } catch (err) {
-          void err;
-        }
-      }
-
-      // Documentation Drift score
-      if (results.docDrift) {
-        toolScores.set('doc-drift', {
-          toolName: 'doc-drift',
-          score: results.docDrift.summary.score,
-          rawMetrics: results.docDrift.rawData,
-          factors: [],
-          recommendations: (results.docDrift.recommendations || []).map(
-            (action: string) => ({
-              action,
-              estimatedImpact: 5,
-              priority: 'medium',
-            })
-          ),
-        });
-      }
-
-      // Dependency Health score
-      if (results.deps) {
-        toolScores.set('dependency-health', {
-          toolName: 'dependency-health',
-          score: results.deps.summary.score,
-          rawMetrics: results.deps.rawData,
-          factors: [],
-          recommendations: (results.deps.recommendations || []).map(
-            (action: string) => ({
-              action,
-              estimatedImpact: 5,
-              priority: 'medium',
-            })
-          ),
-        });
-      }
-
-      // Change Amplification score
-      if (results.changeAmplification) {
-        toolScores.set('change-amplification', {
-          toolName: 'change-amplification',
-          score: results.changeAmplification.summary.score,
-          rawMetrics: results.changeAmplification.rawData,
-          factors: [],
-          recommendations: (
-            results.changeAmplification.recommendations || []
-          ).map((action: string) => ({
-            action,
-            estimatedImpact: 5,
-            priority: 'medium',
-          })),
-        });
-      }
+      console.log(chalk.bold('\n📊 AI Readiness Overall Score'));
+      console.log(`  ${formatScore(scoringResult)}`);
 
       // Parse CLI weight overrides (if any)
-      const cliWeights = parseWeightString((options as any).weights);
+      // Note: weights are already handled inside scoreUnified via finalOptions and calculateOverallScore
 
-      // Only calculate overall score if we have at least one tool score
-      if (toolScores.size > 0) {
-        scoringResult = calculateOverallScore(
-          toolScores,
-          finalOptions,
-          cliWeights.size ? cliWeights : undefined
-        );
+      // Check if we need to compare to a previous report
+      if (options.compareTo) {
+        try {
+          const prevReportStr = readFileSync(
+            resolvePath(process.cwd(), options.compareTo),
+            'utf8'
+          );
+          const prevReport = JSON.parse(prevReportStr);
+          const prevScore =
+            prevReport.scoring?.score || prevReport.scoring?.overallScore;
 
-        console.log(chalk.bold('\n📊 AI Readiness Overall Score'));
-        console.log(`  ${formatScore(scoringResult)}`);
-
-        // Check if we need to compare to a previous report
-        if (options.compareTo) {
-          try {
-            const prevReportStr = readFileSync(
-              resolvePath(process.cwd(), options.compareTo),
-              'utf8'
-            );
-            const prevReport = JSON.parse(prevReportStr);
-            const prevScore =
-              prevReport.scoring?.score || prevReport.scoring?.overallScore;
-
-            if (typeof prevScore === 'number') {
-              const diff = scoringResult.overall - prevScore;
-              const diffStr = diff > 0 ? `+${diff}` : String(diff);
-              console.log();
-              if (diff > 0) {
-                console.log(
-                  chalk.green(
-                    `  📈 Trend: ${diffStr} compared to ${options.compareTo} (${prevScore} → ${scoringResult.overall})`
-                  )
-                );
-              } else if (diff < 0) {
-                console.log(
-                  chalk.red(
-                    `  📉 Trend: ${diffStr} compared to ${options.compareTo} (${prevScore} → ${scoringResult.overall})`
-                  )
-                );
-                // Trend gating: if we regressed and CI is on or threshold is present, we could lower the threshold effectively,
-                // but for now, we just highlight the regression.
-              } else {
-                console.log(
-                  chalk.blue(
-                    `  ➖ Trend: No change compared to ${options.compareTo} (${prevScore} → ${scoringResult.overall})`
-                  )
-                );
-              }
-
-              // Add trend info to scoringResult for programmatic use
-              (scoringResult as any).trend = {
-                previousScore: prevScore,
-                difference: diff,
-              };
+          if (typeof prevScore === 'number') {
+            const diff = scoringResult.overall - prevScore;
+            const diffStr = diff > 0 ? `+${diff}` : String(diff);
+            console.log();
+            if (diff > 0) {
+              console.log(
+                chalk.green(
+                  `  📈 Trend: ${diffStr} compared to ${options.compareTo} (${prevScore} → ${scoringResult.overall})`
+                )
+              );
+            } else if (diff < 0) {
+              console.log(
+                chalk.red(
+                  `  📉 Trend: ${diffStr} compared to ${options.compareTo} (${prevScore} → ${scoringResult.overall})`
+                )
+              );
+              // Trend gating: if we regressed and CI is on or threshold is present, we could lower the threshold effectively,
+              // but for now, we just highlight the regression.
             } else {
               console.log(
-                chalk.yellow(
-                  `\n  ⚠️  Previous report at ${options.compareTo} does not contain an overall score.`
+                chalk.blue(
+                  `  ➖ Trend: No change compared to ${options.compareTo} (${prevScore} → ${scoringResult.overall})`
                 )
               );
             }
-          } catch (e) {
-            void e;
+
+            // Add trend info to scoringResult for programmatic use
+            (scoringResult as any).trend = {
+              previousScore: prevScore,
+              difference: diff,
+            };
+          } else {
             console.log(
               chalk.yellow(
-                `\n  ⚠️  Could not read or parse previous report at ${options.compareTo}.`
+                `\n  ⚠️  Previous report at ${options.compareTo} does not contain an overall score.`
               )
             );
           }
+        } catch (e) {
+          void e;
+          console.log(
+            chalk.yellow(
+              `\n  ⚠️  Could not read or parse previous report at ${options.compareTo}.`
+            )
+          );
         }
+      }
 
-        // Unified Token Budget Analysis
-        const totalWastedDuplication = Array.from(toolScores.values()).reduce(
-          (sum, s) =>
-            sum + (s.tokenBudget?.wastedTokens.bySource.duplication || 0),
-          0
+      // Unified Token Budget Analysis
+      const totalWastedDuplication = (scoringResult.breakdown || []).reduce(
+        (sum, s) =>
+          sum + (s.tokenBudget?.wastedTokens.bySource.duplication || 0),
+        0
+      );
+      const totalWastedFragmentation = (scoringResult.breakdown || []).reduce(
+        (sum, s) =>
+          sum + (s.tokenBudget?.wastedTokens.bySource.fragmentation || 0),
+        0
+      );
+      const totalContext = Math.max(
+        ...(scoringResult.breakdown || []).map(
+          (s) => s.tokenBudget?.totalContextTokens || 0
+        )
+      );
+
+      if (totalContext > 0) {
+        const unifiedBudget = calculateTokenBudget({
+          totalContextTokens: totalContext,
+          wastedTokens: {
+            duplication: totalWastedDuplication,
+            fragmentation: totalWastedFragmentation,
+            chattiness: 0,
+          },
+        });
+
+        const targetModel = options.model || 'claude-4.6';
+        const modelPreset = getModelPreset(targetModel);
+        const costEstimate = estimateCostFromBudget(unifiedBudget, modelPreset);
+
+        const barWidth = 20;
+        const filled = Math.round(unifiedBudget.efficiencyRatio * barWidth);
+        const bar =
+          chalk.green('█'.repeat(filled)) +
+          chalk.dim('░'.repeat(barWidth - filled));
+
+        console.log(chalk.bold('\n📊 AI Token Budget Analysis (v0.13)'));
+        console.log(
+          `  Efficiency: [${bar}] ${(unifiedBudget.efficiencyRatio * 100).toFixed(0)}%`
         );
-        const totalWastedFragmentation = Array.from(toolScores.values()).reduce(
-          (sum, s) =>
-            sum + (s.tokenBudget?.wastedTokens.bySource.fragmentation || 0),
-          0
+        console.log(
+          `  Total Context: ${chalk.bold(unifiedBudget.totalContextTokens.toLocaleString())} tokens`
         );
-        const totalContext = Math.max(
-          ...Array.from(toolScores.values()).map(
-            (s) => s.tokenBudget?.totalContextTokens || 0
-          )
+        console.log(
+          `  Wasted Tokens: ${chalk.red(unifiedBudget.wastedTokens.total.toLocaleString())} (${((unifiedBudget.wastedTokens.total / unifiedBudget.totalContextTokens) * 100).toFixed(1)}%)`
+        );
+        console.log(`  Waste Breakdown:`);
+        console.log(
+          `    • Duplication:   ${unifiedBudget.wastedTokens.bySource.duplication.toLocaleString()} tokens`
+        );
+        console.log(
+          `    • Fragmentation: ${unifiedBudget.wastedTokens.bySource.fragmentation.toLocaleString()} tokens`
+        );
+        console.log(
+          `  Potential Savings: ${chalk.green(unifiedBudget.potentialRetrievableTokens.toLocaleString())} tokens retrievable`
+        );
+        console.log(
+          `\n  Est. Monthly Cost (${modelPreset.name}): ${chalk.bold('$' + costEstimate.total)} [range: $${costEstimate.range[0]}-$${costEstimate.range[1]}]`
         );
 
-        if (totalContext > 0) {
-          const unifiedBudget = calculateTokenBudget({
-            totalContextTokens: totalContext,
-            wastedTokens: {
-              duplication: totalWastedDuplication,
-              fragmentation: totalWastedFragmentation,
-              chattiness: 0,
-            },
-          });
+        // Attach unified budget to report for JSON persistence
+        (scoringResult as any).tokenBudget = unifiedBudget;
+        (scoringResult as any).costEstimate = {
+          model: modelPreset.name,
+          ...costEstimate,
+        };
+      }
 
-          const targetModel = options.model || 'claude-4.6';
-          const modelPreset = getModelPreset(targetModel);
-          const costEstimate = estimateCostFromBudget(
-            unifiedBudget,
-            modelPreset
+      // Show concise breakdown; detailed breakdown only if config requests it
+      if (scoringResult.breakdown && scoringResult.breakdown.length > 0) {
+        console.log(chalk.bold('\nTool breakdown:'));
+        scoringResult.breakdown.forEach((tool) => {
+          const rating = getRating(tool.score);
+          const rd = getRatingDisplay(rating);
+          console.log(
+            `  - ${tool.toolName}: ${tool.score}/100 (${rating}) ${rd.emoji}`
           );
+        });
+        console.log();
 
-          const barWidth = 20;
-          const filled = Math.round(unifiedBudget.efficiencyRatio * barWidth);
-          const bar =
-            chalk.green('█'.repeat(filled)) +
-            chalk.dim('░'.repeat(barWidth - filled));
-
-          console.log(chalk.bold('\n📊 AI Token Budget Analysis (v0.13)'));
-          console.log(
-            `  Efficiency: [${bar}] ${(unifiedBudget.efficiencyRatio * 100).toFixed(0)}%`
-          );
-          console.log(
-            `  Total Context: ${chalk.bold(unifiedBudget.totalContextTokens.toLocaleString())} tokens`
-          );
-          console.log(
-            `  Wasted Tokens: ${chalk.red(unifiedBudget.wastedTokens.total.toLocaleString())} (${((unifiedBudget.wastedTokens.total / unifiedBudget.totalContextTokens) * 100).toFixed(1)}%)`
-          );
-          console.log(`  Waste Breakdown:`);
-          console.log(
-            `    • Duplication:   ${unifiedBudget.wastedTokens.bySource.duplication.toLocaleString()} tokens`
-          );
-          console.log(
-            `    • Fragmentation: ${unifiedBudget.wastedTokens.bySource.fragmentation.toLocaleString()} tokens`
-          );
-          console.log(
-            `  Potential Savings: ${chalk.green(unifiedBudget.potentialRetrievableTokens.toLocaleString())} tokens retrievable`
-          );
-          console.log(
-            `\n  Est. Monthly Cost (${modelPreset.name}): ${chalk.bold('$' + costEstimate.total)} [range: $${costEstimate.range[0]}-$${costEstimate.range[1]}]`
-          );
-
-          // Attach unified budget to report for JSON persistence
-          (scoringResult as any).tokenBudget = unifiedBudget;
-          (scoringResult as any).costEstimate = {
-            model: modelPreset.name,
-            ...costEstimate,
-          };
-        }
-
-        // Show concise breakdown; detailed breakdown only if config requests it
-        if (scoringResult.breakdown && scoringResult.breakdown.length > 0) {
-          console.log(chalk.bold('\nTool breakdown:'));
+        if (finalOptions.scoring?.showBreakdown) {
+          console.log(chalk.bold('Detailed tool breakdown:'));
           scoringResult.breakdown.forEach((tool) => {
-            const rating = getRating(tool.score);
-            const rd = getRatingDisplay(rating);
-            console.log(
-              `  - ${tool.toolName}: ${tool.score}/100 (${rating}) ${rd.emoji}`
-            );
+            console.log(formatToolScore(tool));
           });
           console.log();
-
-          if (finalOptions.scoring?.showBreakdown) {
-            console.log(chalk.bold('Detailed tool breakdown:'));
-            scoringResult.breakdown.forEach((tool) => {
-              console.log(formatToolScore(tool));
-            });
-            console.log();
-          }
         }
       }
     }
