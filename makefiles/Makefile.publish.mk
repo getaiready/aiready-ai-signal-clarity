@@ -334,7 +334,6 @@ sync: ## Push monorepo to origin and sync all spokes to their public repos. Use 
 	$(call log_step,Pushing to monorepo...)
 	@git push origin $(TARGET_BRANCH)
 	@$(call log_success,Pushed to monorepo)
-	\
 	@$(call log_step,Syncing relevant repositories...)
 	@synced_count=0; \
 	for spoke in $(ALL_SPOKES); do \
