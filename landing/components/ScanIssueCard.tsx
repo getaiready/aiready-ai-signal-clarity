@@ -25,11 +25,11 @@ export default function ScanIssueCard({ issue, index }: ScanIssueCardProps) {
       animate={{ opacity: 1, x: 0, height: 'auto' }}
       transition={{ duration: 0.4, delay: index * 0.1 }}
       whileHover={{ scale: 1.02, x: 5 }}
-      className={`relative border ${colors.border} rounded-lg p-4 backdrop-blur-sm ${colors.bg} ${colors.glow} group cursor-pointer overflow-hidden`}
+      className={`relative border ${colors.border} rounded-xl p-4 backdrop-blur-md ${colors.bg} ${colors.glow} group cursor-pointer overflow-hidden shadow-lg`}
     >
       {/* Animated scan line effect */}
       <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent"
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/5 to-transparent"
         initial={{ x: '-100%' }}
         animate={{ x: '200%' }}
         transition={{
@@ -39,12 +39,6 @@ export default function ScanIssueCard({ issue, index }: ScanIssueCardProps) {
           ease: 'linear',
         }}
       />
-
-      {/* Corner decorations */}
-      <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-cyan-500/50" />
-      <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-cyan-500/50" />
-      <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-cyan-500/50" />
-      <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-cyan-500/50" />
 
       <div className="flex items-start gap-3 relative z-10">
         <motion.div

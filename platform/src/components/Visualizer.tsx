@@ -177,7 +177,7 @@ export default function Visualizer({ data, filters, onToggleFilter }: Props) {
                   </svg>
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6 scrollbar-thin">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                     Full Path

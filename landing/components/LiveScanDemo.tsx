@@ -196,11 +196,11 @@ export default function LiveScanDemo() {
               <div className="flex-1 h-px bg-gradient-to-r from-cyan-500/50 to-transparent" />
             </div>
 
-            <div className="relative">
+            <div className="relative overflow-hidden">
               {/* Sci-fi border effect */}
-              <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/10 to-blue-500/10 rounded-lg blur-sm" />
+              <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/10 to-blue-500/10 rounded-xl blur-sm" />
 
-              <div className="relative space-y-3 max-h-96 overflow-y-auto pr-2 scrollbar-thin scrollbar-track-slate-800/50 scrollbar-thumb-cyan-500/30 hover:scrollbar-thumb-cyan-500/50">
+              <div className="relative space-y-3 max-h-[450px] overflow-y-auto overflow-x-hidden p-1 pr-3 scrollbar-thin">
                 {visibleIssues.map((issue, index) => (
                   <ScanIssueCard key={issue.id} issue={issue} index={index} />
                 ))}
