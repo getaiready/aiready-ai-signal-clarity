@@ -158,7 +158,7 @@ export function AIOptimizedContent() {
           <li>During code reviews to check AI-friendly patterns</li>
           <li>Legacy code modernization for AI collaboration</li>
           <li>Onboarding new team members</li>
-          <li>Maintaining consistency in monorepos</li>
+          <li>Maintaining consistency across your repositories</li>
         </ul>
       </section>
 

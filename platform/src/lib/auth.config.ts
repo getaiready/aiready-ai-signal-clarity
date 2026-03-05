@@ -170,6 +170,7 @@ export const authConfig: NextAuthConfig = {
         isOnApi ||
         nextUrl.pathname === '/' ||
         nextUrl.pathname === '/login' ||
+        nextUrl.pathname === '/metrics' ||
         nextUrl.pathname === '/terms' ||
         nextUrl.pathname === '/privacy'
       ) {

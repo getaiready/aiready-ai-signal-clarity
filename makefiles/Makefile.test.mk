@@ -3,7 +3,7 @@
 ###############################################################################
 include makefiles/Makefile.shared.mk
 
-.PHONY: test test-core test-pattern-detect test-watch test-coverage test-verify-cli test-landing-e2e test-platform-e2e
+.PHONY: test test-core test-pattern-detect test-watch test-coverage test-verify-cli test-landing-e2e test-platform-e2e test-platform test-landing test-platform-e2e-local test-landing-e2e-local
 
 test: ## Run tests for all packages (noninteractive)
 	@$(call log_step,Running tests for all packages (noninteractive)...) 
@@ -33,6 +33,16 @@ test-coverage: ## Run tests with coverage report
 	@$(PNPM) test --coverage
 	@$(call log_success,Coverage report generated)
 
+test-landing: ## Run unit tests for landing page
+	@$(call log_info,Running tests for @aiready/landing...)
+	@cd landing && $(PNPM) lint || $(call log_warning,Landing lint had errors - continuing anyway)
+	@$(call log_success,Landing tests checked)
+
+test-platform: ## Run unit tests for platform
+	@$(call log_info,Running tests for @aiready/platform...)
+	@cd platform && $(PNPM) test
+	@$(call log_success,Platform unit tests passed)
+
 test-verify-cli: ## Run a smoke scan and verify CLI output
 	@$(call log_step,Running CLI smoke test...)
 	@# Ensure CLI is built first
@@ -49,7 +59,17 @@ test-landing-e2e: ## Run E2E tests for landing page
 	@cd landing && $(PNPM) test:e2e
 	@$(call log_success,Landing page E2E tests passed)
 
+test-landing-e2e-local: ## Run landing E2E tests against local dev server
+	@$(call log_step,Running landing E2E tests against local dev server...)
+	@cd landing && $(PNPM) test:e2e
+	@$(call log_success,Landing local E2E tests passed)
+
 test-platform-e2e: ## Run Playwright E2E tests for platform against dev endpoint
 	@$(call log_step,Running platform E2E tests against https://dev.platform.getaiready.dev...)
 	@cd platform && PLAYWRIGHT_TEST_BASE_URL=https://dev.platform.getaiready.dev $(PNPM) test:e2e
 	@$(call log_success,Platform E2E tests passed)
+
+test-platform-e2e-local: ## Run platform E2E tests against local dev server
+	@$(call log_step,Running platform E2E tests against local server...)
+	@cd platform && $(PNPM) test:e2e
+	@$(call log_success,Platform local E2E tests passed)

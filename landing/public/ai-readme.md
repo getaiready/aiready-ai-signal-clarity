@@ -81,7 +81,7 @@ They complement each other - use both for best results.
 2. **Code Reviews**: Check if new code maintains AI-friendly patterns
 3. **Legacy Code Modernization**: Identify areas that need refactoring for AI collaboration
 4. **Onboarding**: Help new team members understand codebase patterns
-5. **Monorepo Management**: Maintain consistency across multiple packages
+5. **Managing Multiple Repositories**: Maintain consistency across multiple packages
 
 ## Requirements
 

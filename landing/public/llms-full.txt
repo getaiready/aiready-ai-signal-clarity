@@ -295,7 +295,7 @@ Identify areas that need refactoring for better AI collaboration. Prioritize hig
 ### 4. Onboarding
 Help new team members (and AI) understand codebase patterns and structure.
 
-### 5. Monorepo Management
+### 5. Managing Multiple Repositories
 Maintain consistency across multiple packages. Ensure all packages are equally AI-friendly.
 
 ### 6. CI/CD Integration
@@ -404,8 +404,8 @@ A: Yes. MIT license allows commercial use without restrictions.
 **Q: How accurate is the duplication detection?**
 A: Uses Jaccard similarity on AST tokens. Tuned thresholds minimize false positives while catching meaningful duplicates.
 
-**Q: Does it work with monorepos?**
-A: Yes. Designed to work with monorepos, multiple packages, and complex project structures.
+**Q: Does it work with multiple repositories?**
+A: Yes. Designed to work with multiple packages and complex project structures.
 
 **Q: How long does a scan take?**
 A: Typically 5-30 seconds for medium projects (100-500 files). Scales linearly with codebase size.

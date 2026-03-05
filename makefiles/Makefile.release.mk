@@ -130,6 +130,9 @@ release-landing: ## Release landing page: TYPE=patch|minor|major
 	$(MAKE) -C $(ROOT_DIR) $$bump_target; \
 	$(call log_success,Version bump complete for @aiready/landing); \
 	$(call commit_and_tag_landing); \
+	$(call log_step,Running landing tests before release...); \
+	$(MAKE) -C $(ROOT_DIR) test-landing || exit 1; \
+	$(MAKE) -C $(ROOT_DIR) test-landing-e2e-local || exit 1; \
 	$(call log_step,Building landing page...); \
 	cd $(LANDING_DIR) && pnpm build || { \
 		$(call log_error,Build failed for @aiready/landing. Aborting release.); \
@@ -169,6 +172,9 @@ release-platform: ## Release platform: TYPE=patch|minor|major
 	$(MAKE) -C $(ROOT_DIR) $$bump_target; \
 	$(call log_success,Version bump complete for @aiready/platform); \
 	$(call commit_and_tag_platform); \
+	$(call log_step,Running platform tests before release...); \
+	$(MAKE) -C $(ROOT_DIR) test-platform || exit 1; \
+	$(MAKE) -C $(ROOT_DIR) test-platform-e2e-local || exit 1; \
 	$(call log_step,Building and deploying platform to production...); \
 	$(MAKE) -C $(ROOT_DIR) deploy-platform-prod || { \
 		$(call log_error,Production deployment failed. Aborting release.); \

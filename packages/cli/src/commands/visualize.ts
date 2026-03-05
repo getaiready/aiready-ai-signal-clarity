@@ -85,12 +85,12 @@ export async function visualizeAction(
 
     if (useDevMode) {
       try {
-        const monorepoWebDir = resolvePath(dirPath, 'packages/visualizer');
+        const localWebDir = resolvePath(dirPath, 'packages/visualizer');
         let webDir = '';
         let visualizerAvailable = false;
 
-        if (existsSync(monorepoWebDir)) {
-          webDir = monorepoWebDir;
+        if (existsSync(localWebDir)) {
+          webDir = localWebDir;
           visualizerAvailable = true;
         } else {
           // Try to resolve installed @aiready/visualizer package from node_modules
