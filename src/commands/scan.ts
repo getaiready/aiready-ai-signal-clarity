@@ -662,7 +662,7 @@ export async function scanAction(directory: string, options: ScanOptions) {
       scoring: ScoringResult | undefined
     ) => {
       const allResults: any[] = [];
-      let totalFilesSet = new Set<string>();
+      const totalFilesSet = new Set<string>();
       let criticalCount = 0;
       let majorCount = 0;
 
