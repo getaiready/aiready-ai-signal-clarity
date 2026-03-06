@@ -81,6 +81,24 @@ define commit_and_tag_platform
 	$(call log_success,Committed and tagged $$tag_name)
 endef
 
+# Internal: tag platform dev release (no version bump commit)
+define tag_platform_dev
+	version=$$(node -p "require('$(PLATFORM_DIR)/package.json').version"); \
+	tag_name="platform-dev-v$$version"; \
+	$(call log_step,Tagging dev release $$tag_name...); \
+	cd $(ROOT_DIR) && git tag -f -a "$$tag_name" -m "Dev release @aiready/platform v$$version"; \
+	$(call log_success,Tagged $$tag_name)
+endef
+
+# Internal: tag landing dev release
+define tag_landing_dev
+	version=$$(node -p "require('$(LANDING_DIR)/package.json').version"); \
+	tag_name="landing-dev-v$$version"; \
+	$(call log_step,Tagging dev release $$tag_name...); \
+	cd $(ROOT_DIR) && git tag -f -a "$$tag_name" -m "Dev release @aiready/landing v$$version"; \
+	$(call log_success,Tagged $$tag_name)
+endef
+
 ##@ Landing Version Management
 
 version-landing-patch: ## Bump landing version (patch)
@@ -357,20 +375,24 @@ release-all: ## Release all spokes: TYPE=patch|minor|major (excludes landing)
 
 release-dev: ## Full dev deploy workflow: Build + Unit test + Deploy dev + Plawright e2e tests
 	@$(call log_step,Starting dev release pipeline...)
-	$(MAKE) -C $(ROOT_DIR) build || exit 1
-	$(MAKE) -C $(ROOT_DIR) test || exit 1
-	$(MAKE) -C $(ROOT_DIR) deploy-platform || exit 1
+	@$(MAKE) -C $(ROOT_DIR) build || exit 1
+	@$(MAKE) -C $(ROOT_DIR) test || exit 1
+	@$(MAKE) -C $(ROOT_DIR) deploy-platform || exit 1
+	@$(call tag_platform_dev)
 	@$(call log_step,Running Platform E2E tests against Dev endpoint...)
-	$(MAKE) -C $(ROOT_DIR) test-platform-e2e || { \
+	@$(MAKE) -C $(ROOT_DIR) test-platform-e2e || { \
 		$(call log_error,Platform E2E tests failed on dev endpoint); \
 		exit 1; \
 	}
 	@$(call log_step,Running Landing E2E tests...)
-	$(MAKE) -C $(ROOT_DIR) test-landing-e2e || { \
+	@$(MAKE) -C $(ROOT_DIR) test-landing-e2e || { \
 		$(call log_error,Landing E2E tests failed); \
 		exit 1; \
 	}
+	@$(call log_step,Pushing tags...)
+	@cd $(ROOT_DIR) && git push origin --follow-tags
 	@$(call log_success,Dev release pipeline completed successfully!)
+
 
 release-status: ## Show local and npm registry versions for all spokes + landing
 	@$(call log_step,Reading local and npm registry versions...)
