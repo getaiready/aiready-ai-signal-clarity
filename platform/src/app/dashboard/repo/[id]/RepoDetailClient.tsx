@@ -78,6 +78,18 @@ function RepoDetailContent({ repo, user, teams, overallScore }: Props) {
   // Flatten issues from breakdown for easy filtering/display
   const allIssues: any[] = [];
   if (analysis?.breakdown) {
+    // Determine the likely project root to relativize paths
+    // Look for everything after the repo name in the path
+    const cleanPath = (p: string) => {
+      if (!p) return p;
+      const repoName = repo.name.split('/').pop() || repo.name;
+      const index = p.indexOf(repoName);
+      if (index !== -1) {
+        return p.substring(index + repoName.length + 1);
+      }
+      return p;
+    };
+
     Object.entries(analysis.breakdown).forEach(
       ([toolName, toolData]: [string, any]) => {
         if (!toolData || !toolData.details || !Array.isArray(toolData.details))
@@ -91,25 +103,26 @@ function RepoDetailContent({ repo, user, teams, overallScore }: Props) {
 
           if (issue.location?.file) {
             locations.push({
-              path: issue.location.file,
+              path: cleanPath(issue.location.file),
               line: issue.location.line,
             });
           }
 
           if (issue.file && !issue.location?.file) {
-            locations.push({ path: issue.file, line: issue.line });
+            locations.push({ path: cleanPath(issue.file), line: issue.line });
           }
           if (issue.file1)
-            locations.push({ path: issue.file1, line: issue.line1 });
+            locations.push({ path: cleanPath(issue.file1), line: issue.line1 });
           if (issue.file2)
-            locations.push({ path: issue.file2, line: issue.line2 });
+            locations.push({ path: cleanPath(issue.file2), line: issue.line2 });
           if (issue.fileName && locations.length === 0) {
-            locations.push({ path: issue.fileName });
+            locations.push({ path: cleanPath(issue.fileName) });
           }
 
           if (Array.isArray(issue.affectedPaths)) {
             issue.affectedPaths.forEach((p: string) => {
-              if (p && typeof p === 'string') locations.push({ path: p });
+              if (p && typeof p === 'string')
+                locations.push({ path: cleanPath(p) });
             });
           }
 
