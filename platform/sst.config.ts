@@ -148,8 +148,8 @@ export default $config({
       };
     }
 
-    // Lambda worker for scanning repositories
-    const scanWorker = new sst.aws.Function('ScanWorker', {
+    // Subscribe workers to queues
+    scanQueue.subscribe({
       handler: 'src/worker/index.handler',
       timeout: '15 minutes',
       memory: '2048 MB',
@@ -163,11 +163,7 @@ export default $config({
       },
     });
 
-    // @ts-ignore - SST Ion expects the function object for auto-permissions
-    scanQueue.subscribe(scanWorker);
-
-    // Lambda worker for processing analysis results (calculating metrics/trends)
-    const analysisProcessor = new sst.aws.Function('AnalysisProcessor', {
+    analysisQueue.subscribe({
       handler: 'src/functions/process-analysis.handler',
       timeout: '5 minutes',
       memory: '1024 MB',
@@ -183,9 +179,6 @@ export default $config({
         DYNAMO_TABLE: table.name,
       },
     });
-
-    // @ts-ignore - SST Ion expects the function object for auto-permissions
-    analysisQueue.subscribe(analysisProcessor);
 
     const site = new sst.aws.Nextjs('Dashboard', {
       ...siteConfig,
