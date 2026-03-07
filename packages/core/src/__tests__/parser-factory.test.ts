@@ -44,7 +44,9 @@ describe('ParserFactory', () => {
   it('should correctly identify supported files', () => {
     expect(isFileSupported('test.ts')).toBe(true);
     expect(isFileSupported('test.py')).toBe(true);
-    expect(isFileSupported('test.java')).toBe(false); // Not yet implemented
+    expect(isFileSupported('test.java')).toBe(true);
+    expect(isFileSupported('test.cs')).toBe(true);
+    expect(isFileSupported('test.go')).toBe(true);
     expect(isFileSupported('README.md')).toBe(false);
   });
 
@@ -52,7 +54,10 @@ describe('ParserFactory', () => {
     const languages = getSupportedLanguages();
     expect(languages).toContain(Language.TypeScript);
     expect(languages).toContain(Language.Python);
-    expect(languages.length).toBeGreaterThanOrEqual(2);
+    expect(languages).toContain(Language.Java);
+    expect(languages).toContain(Language.CSharp);
+    expect(languages).toContain(Language.Go);
+    expect(languages.length).toBeGreaterThanOrEqual(5);
   });
 
   it('should be case-insensitive for extensions', () => {
@@ -75,6 +80,9 @@ describe('Language Detection', () => {
       Language.JavaScript
     );
     expect(factory.getLanguageForFile('src/main.py')).toBe(Language.Python);
+    expect(factory.getLanguageForFile('src/App.java')).toBe(Language.Java);
+    expect(factory.getLanguageForFile('src/App.cs')).toBe(Language.CSharp);
+    expect(factory.getLanguageForFile('src/main.go')).toBe(Language.Go);
     expect(factory.getLanguageForFile('README.md')).toBeNull();
   });
 });
