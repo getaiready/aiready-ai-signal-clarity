@@ -44,7 +44,7 @@ function extractBlocks(file: string, content: string): CodeBlock[] {
 
   // Regex to match declarations (TS/JS, Java, C# and Go)
   const blockRegex =
-    /^\s*(?:export\s+)?(?:async\s+)?(?:public\s+|private\s+|protected\s+|internal\s+|static\s+|readonly\s+|virtual\s+|abstract\s+|override\s+)*(function|class|const|interface|type|enum|record|struct|void|func|[a-zA-Z0-9_<>\[\]]+)\s+([a-zA-Z0-9_]+)(?:\s*\(|(?:\s+extends|\s+implements|\s+where)?\s*\{)|^\s*(app\.(?:get|post|put|delete|patch|use))\(/gm;
+    /^\s*(?:export\s+)?(?:async\s+)?(?:public\s+|private\s+|protected\s+|internal\s+|static\s+|readonly\s+|virtual\s+|abstract\s+|override\s+)*(function|class|interface|type|enum|record|struct|void|func|[a-zA-Z0-9_<>\[\]]+)\s+([a-zA-Z0-9_]+)(?:\s*\(|(?:\s+extends|\s+implements|\s+where)?\s*\{)|^\s*(?:export\s+)?const\s+([a-zA-Z0-9_]+)\s*=\s*[a-zA-Z0-9_.]+\.object\(|^\s*(app\.(?:get|post|put|delete|patch|use))\(/gm;
 
   let match;
   while ((match = blockRegex.exec(content)) !== null) {
@@ -56,9 +56,12 @@ function extractBlocks(file: string, content: string): CodeBlock[] {
     if (match[1]) {
       type = match[1];
       name = match[2];
+    } else if (match[3]) {
+      type = 'const';
+      name = match[3];
     } else {
       type = 'handler';
-      name = match[3];
+      name = match[4];
     }
 
     // Find end of block (matching braces heuristic)
