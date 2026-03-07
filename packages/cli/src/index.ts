@@ -93,7 +93,8 @@ const TOOL_PACKAGE_MAP: Record<string, string> = {
 
 /**
  * Deeply sanitizes a configuration object by removing infrastructure keys like rootDir.
- * Works recursively to clean up nested tool configurations.
+ * Works recursively to clean up nested tool configurations to ensure compatibility
+ * with the AIReadyConfig schema for portable configuration files.
  */
 function sanitizeConfigRecursive(obj: any): any {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
@@ -105,6 +106,7 @@ function sanitizeConfigRecursive(obj: any): any {
     'progressCallback',
     'streamResults',
     'batchSize',
+    'useSmartDefaults',
   ];
 
   for (const [key, value] of Object.entries(obj)) {
@@ -122,7 +124,7 @@ function sanitizeConfigRecursive(obj: any): any {
 }
 
 /**
- * Sanitize tool configuration by removing global options
+ * Sanitize tool configuration by removing global options to match AIReadyConfig schema
  */
 function sanitizeToolConfig(config: any): any {
   return sanitizeConfigRecursive(config);
@@ -309,7 +311,8 @@ export async function analyzeUnified(
     }
   }
 
-  // Finalize configuration for metadata to match AIReadyConfig structure
+  // Finalize configuration for metadata to match AIReadyConfig schema
+  // We use sanitizeConfigRecursive to ensure no internal keys (like rootDir) remain
   result.summary.config = sanitizeConfigRecursive({
     scan: {
       tools: requestedTools,
@@ -318,8 +321,6 @@ export async function analyzeUnified(
     },
     // Use 'tools' for tool-specific configurations to match AIReadyConfig
     tools: result.summary.toolConfigs,
-    // Keep top-level options for backward compatibility
-    useSmartDefaults: options.useSmartDefaults,
   });
 
   result.summary.executionTime = Date.now() - startTime;
