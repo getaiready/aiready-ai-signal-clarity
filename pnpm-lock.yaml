@@ -906,10 +906,6 @@ importers:
         version: 5.9.3
 
   vscode-extension:
-    dependencies:
-      '@aiready/core':
-        specifier: workspace:*
-        version: link:../packages/core
     devDependencies:
       '@types/node':
         specifier: ^24.0.0

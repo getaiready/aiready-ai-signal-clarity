@@ -325,9 +325,15 @@ export class TypeScriptParser implements LanguageParser {
         ...metadata,
       });
     } else if (declaration.type === 'ClassDeclaration' && declaration.id) {
+      const body = declaration.body.body;
+      const methods = body.filter((m) => m.type === 'MethodDefinition');
+      const properties = body.filter((m) => m.type === 'PropertyDefinition');
+
       exports.push({
         name: declaration.id.name,
         type: 'class',
+        methodCount: methods.length,
+        propertyCount: properties.length,
         loc: declaration.loc
           ? {
               start: {
@@ -383,9 +389,15 @@ export class TypeScriptParser implements LanguageParser {
         ...metadata,
       });
     } else if (declaration.type === 'TSInterfaceDeclaration') {
+      const body = declaration.body.body;
+      const methods = body.filter((m) => m.type === 'TSMethodSignature');
+      const properties = body.filter((m) => m.type === 'TSPropertySignature');
+
       exports.push({
         name: declaration.id.name,
         type: 'interface',
+        methodCount: methods.length,
+        propertyCount: properties.length || body.length, // Fallback to body.length
         loc: declaration.loc
           ? {
               start: {

@@ -155,9 +155,16 @@ export async function analyzeAgentGrounding(
   const readmeStaleDays = options.readmeStaleDays ?? 90;
 
   // Use core scanEntries which respects .gitignore recursively
+  // First scan for metrics that need code analysis (limited to JS/TS)
   const { files, dirs: rawDirs } = await scanEntries({
     ...options,
     include: options.include || ['**/*.{ts,tsx,js,jsx}'],
+  });
+
+  // Second scan for ALL files to catch vague names (e.g. data.txt, tmp.log)
+  const { files: allFiles } = await scanEntries({
+    ...options,
+    include: ['**/*'],
   });
 
   const dirs = rawDirs.map((d: string) => ({
@@ -175,7 +182,7 @@ export async function analyzeAgentGrounding(
     (options.additionalVagueNames ?? []).map((n) => n.toLowerCase())
   );
   let vagueFileNames = 0;
-  for (const f of files) {
+  for (const f of allFiles) {
     const base = basename(f, extname(f)).toLowerCase();
     if (VAGUE_FILE_NAMES.has(base) || additionalVague.has(base)) {
       vagueFileNames++;

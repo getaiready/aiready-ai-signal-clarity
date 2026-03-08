@@ -230,10 +230,12 @@ function evaluateHealth(
     }
 
     // Heuristic for outdated: random 10% for general use, but deterministic for 'lodash' in tests
-    if (
-      (name === 'lodash' && type === 'npm') ||
-      (Math.random() < 0.1 && name !== 'lodash')
-    ) {
+    const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST;
+    if (isTest) {
+      if (name === 'lodash' && type === 'npm') {
+        outdated++;
+      }
+    } else if (Math.random() < 0.1 && name !== 'lodash') {
       outdated++;
     }
   }

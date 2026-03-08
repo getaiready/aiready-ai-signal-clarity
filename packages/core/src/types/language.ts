@@ -80,6 +80,9 @@ export interface ExportInfo {
   parentClass?: string;
   /** For functions/methods: parameters */
   parameters?: string[];
+  /** For classes/interfaces: number of methods and properties */
+  methodCount?: number;
+  propertyCount?: number;
   /** Visibility (public, private, protected) */
   visibility?: 'public' | 'private' | 'protected';
   /** Behavioral metadata for advanced metrics */

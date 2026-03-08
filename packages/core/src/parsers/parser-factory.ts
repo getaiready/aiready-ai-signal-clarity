@@ -1,8 +1,4 @@
 import * as fs from 'fs';
-fs.appendFileSync(
-  '/tmp/aiready_debug.log',
-  `[TRACE] Loading ParserFactory.ts from ${__filename} at ${new Date().toISOString()}\n`
-);
 /**
  * Parser Factory - Manages language-specific parsers
  *

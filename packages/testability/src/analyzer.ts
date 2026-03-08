@@ -67,12 +67,20 @@ async function analyzeFileTestability(filePath: string): Promise<FileAnalysis> {
         if (exp.parameters && exp.parameters.length > 0) {
           result.injectionPatterns++;
         }
+        // Heuristic: bloated classes
+        const total = (exp.methodCount || 0) + (exp.propertyCount || 0);
+        if (total > 5) {
+          result.bloatedInterfaces++;
+        }
       }
 
       if (exp.type === 'interface') {
         result.totalInterfaces++;
         // Heuristic: interfaces with many methods/props are considered bloated
-        // (This info might need more parser support, but for now we look for exports in the same namespace)
+        const total = (exp.methodCount || 0) + (exp.propertyCount || 0);
+        if (total > 5) {
+          result.bloatedInterfaces++;
+        }
       }
     }
   } catch (error) {
