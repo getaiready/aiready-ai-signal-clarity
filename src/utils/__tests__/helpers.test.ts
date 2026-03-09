@@ -29,7 +29,7 @@ describe('CLI Helpers', () => {
     };
     const md = generateMarkdownReport(report, '1.5');
     expect(md).toContain('# Consistency Analysis Report');
-    expect(md).toContain('Files Analyzed: 10');
+    expect(md).toContain('**Files Analyzed:** 10');
     expect(md).toContain('Fix naming');
   });
 });
