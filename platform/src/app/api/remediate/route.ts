@@ -26,9 +26,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Trigger the remediation cycle
-    const isSwarm = type === 'swarm';
-
     // 2. Trigger Mastra Refactor Agent (Async Workflow)
     const isSwarm = type === 'swarm';
     console.log(
