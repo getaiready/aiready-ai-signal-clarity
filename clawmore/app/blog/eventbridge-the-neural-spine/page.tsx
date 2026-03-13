@@ -17,8 +17,55 @@ import {
   GitBranch,
   Layers,
 } from 'lucide-react';
+import BlogHero from '../../components/BlogHero';
+import BlogCard from '../../components/BlogCard';
 import Modal from '../../../components/Modal';
 import LeadForm from '../../../components/LeadForm';
+import SystemFlow from '../../../components/SystemFlow';
+
+const FLOW_NODES = [
+  {
+    id: 'reflector',
+    data: { label: '[REFLECTOR]', type: 'agent' },
+    position: { x: 0, y: 0 },
+  },
+  {
+    id: 'bus',
+    data: { label: 'NEURAL_BUS_STREAM', type: 'bus' },
+    position: { x: 250, y: 0 },
+  },
+  {
+    id: 'architect',
+    data: { label: '[ARCHITECT]', type: 'agent' },
+    position: { x: 500, y: -50 },
+  },
+  {
+    id: 'coder',
+    data: { label: '[CODER]', type: 'agent' },
+    position: { x: 500, y: 50 },
+  },
+  {
+    id: 'event1',
+    data: { label: 'GAP_DETECTED', type: 'event' },
+    position: { x: 125, y: -30 },
+  },
+  {
+    id: 'event2',
+    data: { label: 'PATCH_PLANNED', type: 'event' },
+    position: { x: 375, y: -30 },
+  },
+  {
+    id: 'event3',
+    data: { label: 'GIT_COMMIT', type: 'event' },
+    position: { x: 375, y: 30 },
+  },
+];
+
+const FLOW_EDGES = [
+  { id: 'e1', source: 'reflector', target: 'bus', animated: true },
+  { id: 'e2', source: 'bus', target: 'architect', animated: true },
+  { id: 'e3', source: 'bus', target: 'coder', animated: true },
+];
 
 export default function BlogPost() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -135,45 +182,7 @@ export default function BlogPost() {
                   </p>
                 </section>
 
-                {/* Technical Architecture Visualization */}
-                <div className="p-10 glass-card border-white/10 bg-white/[0.01] relative overflow-hidden group">
-                  <div className="flex flex-col gap-6 relative z-10">
-                    <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-                      <Layers className="w-5 h-5 text-cyber-purple" />
-                      <div className="text-[10px] font-mono uppercase tracking-[0.4em] text-white">
-                        Neural_Bus_Stream
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-sm">
-                        <Activity className="w-4 h-4 text-cyber-purple animate-pulse" />
-                        <div className="font-mono text-[10px] text-zinc-500 italic">
-                          [REFLECTOR] emits GAP_DETECTED{' '}
-                          {"{ type: 'CONCURRENCY_CAP' }"}
-                        </div>
-                      </div>
-                      <div className="flex justify-center">
-                        <div className="h-4 w-px bg-cyber-purple/30 animate-pulse" />
-                      </div>
-                      <div className="flex items-center gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-sm">
-                        <Cpu className="w-4 h-4 text-cyber-blue" />
-                        <div className="font-mono text-[10px] text-zinc-500 italic">
-                          [ARCHITECT] consumes & emits MUTATION_PLANNED{' '}
-                          {"{ patch_id: 'v4.2' }"}
-                        </div>
-                      </div>
-                      <div className="flex justify-center">
-                        <div className="h-4 w-px bg-cyber-blue/30 animate-pulse" />
-                      </div>
-                      <div className="flex items-center gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-sm">
-                        <GitBranch className="w-4 h-4 text-white" />
-                        <div className="font-mono text-[10px] text-zinc-500 italic">
-                          [CODER] consumes & executes GIT_PERSISTENCE
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <SystemFlow nodes={FLOW_NODES} edges={FLOW_EDGES} />
 
                 <section>
                   <h2 className="text-3xl font-black tracking-tight mb-6 flex items-center gap-4">
