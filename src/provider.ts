@@ -1,11 +1,8 @@
 import {
-  ToolProvider,
-  ToolName,
-  SpokeOutput,
-  ScanOptions,
-  ToolScoringOutput,
   AnalysisResult,
-  SpokeOutputSchema,
+  createProvider,
+  ToolName,
+  ScanOptions,
 } from '@aiready/core';
 import { analyzeAiSignalClarity } from './analyzer';
 import { calculateAiSignalClarityScore } from './scoring';
@@ -14,44 +11,35 @@ import { AiSignalClarityOptions, AiSignalClarityReport } from './types';
 /**
  * AI Signal Clarity Tool Provider
  */
-export const AiSignalClarityProvider: ToolProvider = {
+export const AiSignalClarityProvider = createProvider({
   id: ToolName.AiSignalClarity,
   alias: ['ai-signal', 'clarity', 'hallucination'],
-
-  async analyze(options: ScanOptions): Promise<SpokeOutput> {
-    const report = await analyzeAiSignalClarity(
-      options as AiSignalClarityOptions
-    );
-
-    const results: AnalysisResult[] = report.results.map((r) => ({
+  version: '0.9.5',
+  defaultWeight: 11,
+  async analyzeReport(options: ScanOptions) {
+    return analyzeAiSignalClarity(options as AiSignalClarityOptions);
+  },
+  getResults(report): AnalysisResult[] {
+    return report.results.map((r) => ({
       fileName: r.filePath,
       issues: r.issues as any[],
       metrics: {
-        aiSignalClarityScore: 100, // Default or calculated via scoring
+        aiSignalClarityScore: 100,
       },
     }));
-
-    return SpokeOutputSchema.parse({
-      results,
-      summary: report.summary,
-      metadata: {
-        toolName: ToolName.AiSignalClarity,
-        version: '0.9.5',
-        timestamp: new Date().toISOString(),
-        aggregateSignals: report.aggregateSignals,
-      },
-    });
   },
-
-  score(output: SpokeOutput, options: ScanOptions): ToolScoringOutput {
+  getSummary(report) {
+    return report.summary;
+  },
+  getMetadata(report) {
+    return { aggregateSignals: report.aggregateSignals };
+  },
+  score(output) {
     const report = {
       summary: output.summary,
       aggregateSignals: (output.metadata as any).aggregateSignals,
-      results: [], // Not needed for scoring
+      results: [],
     } as unknown as AiSignalClarityReport;
-
     return calculateAiSignalClarityScore(report);
   },
-
-  defaultWeight: 11,
-};
+});
