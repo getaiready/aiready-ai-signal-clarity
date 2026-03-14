@@ -28,7 +28,7 @@ describe('Dependency Health Provider', () => {
     const output = await DepsProvider.analyze({ rootDir: '.' });
 
     expect(output.summary.filesAnalyzed).toBe(1);
-    expect(output.metadata.toolName).toBe('dependency-health');
+    expect(output.metadata!.toolName).toBe('dependency-health');
   });
 
   it('should score an output', () => {

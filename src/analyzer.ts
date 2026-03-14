@@ -175,7 +175,7 @@ function analyzeGo(
   issues: DepsIssue[]
 ): string[] {
   // Regex for go.mod 'require (...)' or 'require package version'
-  const matches = content.matchAll(/require\s+(?![\(\s])([^\s]+)/g);
+  const matches = content.matchAll(/require\s+(?![( \s])([^\s]+)/g);
   const direct = Array.from(matches).map((m) => m[1]);
 
   const blockMatches = content.match(/require\s+\(([\s\S]*?)\)/);
