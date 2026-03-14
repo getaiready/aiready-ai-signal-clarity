@@ -2,18 +2,15 @@
 
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { Header } from '../../components/Header';
-import { Footer } from '../../components/Footer';
-import AgentPrompt from '../../components/AgentPrompt';
-import { tools } from '../../components/docs/ToolData';
-import DocsSidebar from '../../components/docs/DocsSidebar';
-import GettingStarted from '../../components/docs/GettingStarted';
-import DocsToolDetails from '../../components/docs/DocsToolDetails';
-import DocsUnifiedCli from '../../components/docs/DocsUnifiedCli';
-import {
-  ScoringSection,
-  MetricsSection,
-} from '../../components/docs/DocsSections';
+import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
+import AgentPrompt from '@/components/AgentPrompt';
+import { tools } from '@/components/docs/ToolData';
+import DocsSidebar from '@/components/docs/DocsSidebar';
+import GettingStarted from '@/components/docs/GettingStarted';
+import DocsToolDetails from '@/components/docs/DocsToolDetails';
+import DocsUnifiedCli from '@/components/docs/DocsUnifiedCli';
+import { ScoringSection, MetricsSection } from '@/components/docs/DocsSections';
 
 export default function DocsPageClient() {
   const [activeSection, setActiveSection] = useState('getting-started');
