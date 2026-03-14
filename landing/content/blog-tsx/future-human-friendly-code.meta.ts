@@ -14,6 +14,8 @@ const meta = {
   ],
   readingTime: '6 min read',
   slug: 'future-human-friendly-code',
+  cover: '',
+  ogImage: '',
 };
 
 export default meta;

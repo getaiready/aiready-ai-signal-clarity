@@ -14,7 +14,10 @@ const meta = {
   ],
   readingTime: '7 min read',
   slug: 'closing-the-loop',
+  cover: '',
+  ogImage: '',
   cover: '/agentic-shift-series-5.png',
+  ogImage: '',
   ogImage: '',
   ogImage: '/agentic-shift-series-5.png',
 };

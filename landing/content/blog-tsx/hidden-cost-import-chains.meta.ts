@@ -1,5 +1,7 @@
 export default {
   slug: 'hidden-cost-import-chains',
+  cover: '',
+  ogImage: '',
   title: 'The Hidden Cost of Import Chains',
   date: '2026-02-15',
   excerpt:

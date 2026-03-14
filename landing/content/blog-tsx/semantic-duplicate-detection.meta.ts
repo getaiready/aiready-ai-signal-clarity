@@ -1,5 +1,7 @@
 export default {
   slug: 'semantic-duplicate-detection',
+  cover: '',
+  ogImage: '',
   title:
     'Deep Dive: Semantic Duplicate Detection with AST Analysis - How AI Keeps Rewriting Your Logic',
   date: '2026-02-07',

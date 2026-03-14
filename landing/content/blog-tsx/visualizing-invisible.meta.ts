@@ -14,6 +14,8 @@ const meta = {
   ],
   readingTime: '8 min read',
   slug: 'visualizing-invisible',
+  cover: '',
+  ogImage: '',
 };
 
 export default meta;

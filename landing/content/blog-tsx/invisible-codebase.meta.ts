@@ -7,6 +7,8 @@ const meta = {
   tags: ['AI', 'Code Quality', 'Context Window', 'Semantic Analysis'],
   readingTime: '15 min read',
   slug: 'invisible-codebase',
+  cover: '',
+  ogImage: '',
 };
 
 export default meta;

@@ -1,5 +1,7 @@
 export default {
   slug: 'metrics-that-actually-matter',
+  cover: '',
+  ogImage: '',
   title:
     'AI Code Quality Metrics That Actually Matter: The 9 Dimensions of AI-Readiness',
   date: '2026-01-31',

@@ -7,6 +7,8 @@ const meta = {
   tags: ['AI', 'Tech Debt', 'Code Quality', 'Developer Productivity'],
   readingTime: '12 min read',
   slug: 'ai-code-debt-tsunami',
+  cover: '',
+  ogImage: '',
 };
 
 export default meta;

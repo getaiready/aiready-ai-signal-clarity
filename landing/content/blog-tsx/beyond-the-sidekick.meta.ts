@@ -13,6 +13,8 @@ const meta = {
   ],
   readingTime: '4 min read',
   slug: 'beyond-the-sidekick',
+  cover: '',
+  ogImage: '',
   cover: '/agentic-shift-series-2.png',
   ogImage: '',
   ogImage: '/agentic-shift-series-2.png',
