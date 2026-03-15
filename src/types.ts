@@ -2,7 +2,6 @@ import {
   ScanOptions,
   AnalysisResult,
   Issue,
-  IssueType,
   SpokeOutput,
   Severity,
 } from '@aiready/core';

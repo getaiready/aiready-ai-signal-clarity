@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type {
-  AiSignalClarityOptions,
-  AiSignalClarityReport,
-  FileAiSignalClarityResult,
-} from '../types';
+import type { AiSignalClarityOptions, AiSignalClarityReport } from '../types';
 
 describe('AiSignalClarity Types', () => {
   describe('AiSignalClarityOptions', () => {

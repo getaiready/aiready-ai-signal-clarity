@@ -6,7 +6,7 @@
  */
 
 import { readFileSync } from 'fs';
-import { getParser, Severity, IssueType, Language } from '@aiready/core';
+import { getParser, Severity, IssueType } from '@aiready/core';
 import type {
   AiSignalClarityIssue,
   FileAiSignalClarityResult,

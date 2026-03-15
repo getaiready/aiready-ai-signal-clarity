@@ -1,11 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as index from '../index';
-import type {
-  AiSignalClarityOptions,
-  AiSignalClarityReport,
-  AiSignalClarityIssue,
-  FileAiSignalClarityResult,
-} from '../types';
+import type { AiSignalClarityOptions, AiSignalClarityReport } from '../types';
 
 describe('AiSignalClarity Index Exports', () => {
   it('should export analyzeAiSignalClarity function', () => {
