@@ -397,22 +397,22 @@ sync: ## Push monorepo to origin and sync all spokes to their public repos. Use 
 		CHANGED_FILES="FORCE_ALL"; \
 		$(call log_info,Force sync enabled. All repositories will be synced.); \
 	else \
-		CHANGED_FILES="$$(git diff --name-only origin/$(TARGET_BRANCH) 2>/dev/null || echo "FORCE_ALL")"; \
-		if [ "$$CHANGED_FILES" = "FORCE_ALL" ]; then \
+		CHANGED_FILES="$(git diff --name-only origin/$(TARGET_BRANCH) 2>/dev/null || echo "FORCE_ALL")"; \
+		if [ "$CHANGED_FILES" = "FORCE_ALL" ]; then \
 			$(call log_warning,Could not detect changes reliably. Falling back to full sync.); \
-		elif [ -z "$$CHANGED_FILES" ]; then \
+		elif [ -z "$CHANGED_FILES" ]; then \
 			$(call log_info,No changes detected since last push to origin/$(TARGET_BRANCH).); \
 			echo "To force sync, use 'make sync FORCE=true'"; \
 		else \
 			$(call log_info,Detected changes:); \
-			echo "$$CHANGED_FILES" | sed 's/^/  - /'; \
+			echo "$CHANGED_FILES" | sed 's/^/  - /'; \
 		fi; \
 	fi
 	@$(call log_step,Pushing to monorepo...)
 	@SKIP_PRE_PUSH=true git push origin $(TARGET_BRANCH)
 	@$(call log_success,Pushed to monorepo)
 	@$(call log_step,Syncing relevant repositories in parallel...)
-	@SKIP_PRE_PUSH=true $(MAKE) $(MAKE_PARALLEL) $(addprefix github-sync-spoke-,$(ALL_SPOKES)) github-sync-landing github-sync-clawmore github-sync-serverlessclaw github-sync-vscode github-sync-action CHANGED_FILES="$$CHANGED_FILES" FORCE="$(FORCE)"
+	@SKIP_PRE_PUSH=true $(MAKE) $(MAKE_PARALLEL) $(addprefix github-sync-spoke-,$(ALL_SPOKES)) github-sync-landing github-sync-clawmore github-sync-serverlessclaw github-sync-vscode github-sync-action CHANGED_FILES="$CHANGED_FILES" FORCE="$(FORCE)"
 	@$(call log_success,Sync process completed)
 
 .PHONY: github-sync-spoke-%
