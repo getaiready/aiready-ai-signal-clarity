@@ -1,6 +1,6 @@
 {
   "name": "@aiready/ai-signal-clarity",
-  "version": "0.13.7",
+  "version": "0.13.8",
   "description": "Detects code patterns that cause AI models to hallucinate incorrect implementations",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
