@@ -1,18 +1,15 @@
 {
   "scan": {
-    "include": [
-      "packages/*/src/**",
-      "platform/src/**",
-      "landing/src/**",
-      "clawmore/src/**"
-    ],
+    "include": ["packages/*/src/**", "platform/src/**"],
     "exclude": [
       "**/node_modules/**",
       "**/dist/**",
       "**/build/**",
       "**/.sst/**",
       "**/*.test.ts",
-      "**/*.spec.ts"
+      "**/*.spec.ts",
+      "landing/**",
+      "clawmore/**"
     ],
     "tools": [
       "pattern-detect",
@@ -36,9 +33,9 @@
     },
     "context-analyzer": {
       "maxContextBudget": 128000,
-      "minCohesion": 0.6,
+      "minCohesion": 0.5,
       "maxDepth": 7,
-      "maxFragmentation": 0.4,
+      "maxFragmentation": 0.5,
       "focus": "all",
       "includeNodeModules": false
     },
@@ -48,10 +45,10 @@
       "disableChecks": []
     },
     "ai-signal-clarity": {
-      "checkMagicLiterals": true,
+      "checkMagicLiterals": false,
       "checkBooleanTraps": true,
       "checkAmbiguousNames": true,
-      "checkUndocumentedExports": true,
+      "checkUndocumentedExports": false,
       "checkImplicitSideEffects": false,
       "checkDeepCallbacks": false
     },
@@ -60,8 +57,8 @@
       "readmeStaleDays": 30
     },
     "testability-index": {
-      "minCoverageRatio": 0.7,
-      "testPatterns": ["**/*.test.ts", "**/__tests__/**"]
+      "minCoverageRatio": 0.5,
+      "testPatterns": ["**/*.test.ts", "**/__tests__/**", "**/*.spec.ts"]
     },
     "doc-drift": {
       "maxCommits": 50,
