@@ -11,6 +11,7 @@ import {
   loadConfig,
   mergeConfigWithDefaults,
   resolveOutputPath,
+  displayStandardConsoleReport,
 } from '@aiready/core';
 
 const program = new Command();
@@ -103,109 +104,57 @@ EXAMPLES:
       writeFileSync(outputPath, JSON.stringify(payload, null, 2));
       console.log(chalk.green(`✓ Report saved to ${outputPath}`));
     } else {
-      displayConsoleReport(report, scoringOutput, elapsed);
+      displayStandardConsoleReport({
+        title: '🧠 AI Signal Clarity Analysis',
+        score: scoringOutput.score,
+        rating: report.summary.rating,
+        dimensions: [
+          {
+            name: 'Magic Literals',
+            value: Math.min(100, report.aggregateSignals.magicLiterals * 10),
+          },
+          {
+            name: 'Boolean Traps',
+            value: Math.min(100, report.aggregateSignals.booleanTraps * 10),
+          },
+          {
+            name: 'Ambiguous Names',
+            value: Math.min(100, report.aggregateSignals.ambiguousNames * 10),
+          },
+          {
+            name: 'Undoc. Exports',
+            value: Math.min(
+              100,
+              report.aggregateSignals.undocumentedExports * 10
+            ),
+          },
+          {
+            name: 'Side Effects',
+            value: Math.min(
+              100,
+              report.aggregateSignals.implicitSideEffects * 10
+            ),
+          },
+        ],
+        stats: [
+          { label: 'Files Analyzed', value: report.summary.filesAnalyzed },
+          { label: 'Total Signals', value: report.summary.totalSignals },
+          { label: 'Critical', value: report.summary.criticalSignals },
+        ],
+        issues: report.results
+          .flatMap((r: any) =>
+            r.issues.map((i: any) => ({
+              ...i,
+              message: `[${r.fileName.split('/').pop()}] ${i.message}`,
+            }))
+          )
+          .slice(0, 10),
+        recommendations: report.recommendations,
+        elapsedTime: elapsed,
+        noIssuesMessage:
+          '✨ No AI signal clarity signals found! Your codebase is AI-safe.',
+      });
     }
   });
 
 program.parse();
-
-function ratingColor(rating: string) {
-  switch (rating) {
-    case 'minimal':
-      return chalk.green;
-    case 'low':
-      return chalk.cyan;
-    case 'moderate':
-      return chalk.yellow;
-    case 'high':
-      return chalk.red;
-    case 'severe':
-      return chalk.bgRed.white;
-    default:
-      return chalk.white;
-  }
-}
-
-function severityColor(sev: string) {
-  switch (sev) {
-    case 'critical':
-      return chalk.red;
-    case 'major':
-      return chalk.yellow;
-    case 'minor':
-      return chalk.blue;
-    default:
-      return chalk.gray;
-  }
-}
-
-function displayConsoleReport(report: any, scoring: any, elapsed: string) {
-  const { summary, aggregateSignals, recommendations, results } = report;
-
-  console.log(chalk.bold('\n🧠 AI Signal Clarity Analysis\n'));
-  console.log(
-    `Score:           ${chalk.bold(scoring.score + '/100')} (${ratingColor(summary.rating)(summary.rating.toUpperCase())})`
-  );
-  console.log(`Files Analyzed:  ${chalk.cyan(summary.filesAnalyzed)}`);
-  console.log(`Total Signals:   ${chalk.yellow(summary.totalSignals)}`);
-  console.log(
-    `  Critical: ${chalk.red(summary.criticalSignals)}  Major: ${chalk.yellow(summary.majorSignals)}  Minor: ${chalk.blue(summary.minorSignals)}`
-  );
-  console.log(`Top Risk:        ${chalk.italic(summary.topRisk)}`);
-  console.log(`Analysis Time:   ${chalk.gray(elapsed + 's')}\n`);
-
-  if (summary.totalSignals === 0) {
-    console.log(
-      chalk.green(
-        '✨ No AI signal clarity signals found! Your codebase is AI-safe.\n'
-      )
-    );
-    return;
-  }
-
-  console.log(chalk.bold('📊 Signal Breakdown\n'));
-  const sigs = aggregateSignals;
-  const rows = [
-    ['Magic Literals', sigs.magicLiterals],
-    ['Boolean Traps', sigs.booleanTraps],
-    ['Ambiguous Names', sigs.ambiguousNames],
-    ['Undocumented Exports', sigs.undocumentedExports],
-    ['Implicit Side Effects', sigs.implicitSideEffects],
-    ['Deep Callbacks', sigs.deepCallbacks],
-    ['Overloaded Symbols', sigs.overloadedSymbols],
-  ];
-  for (const [name, count] of rows) {
-    if ((count as number) > 0) {
-      console.log(`  ${String(name).padEnd(22)} ${chalk.yellow(count)}`);
-    }
-  }
-
-  // Show top issues
-  const topIssues = results
-    .flatMap((r: any) => r.issues)
-    .filter((i: any) => i.severity === 'critical' || i.severity === 'major')
-    .slice(0, 10);
-
-  if (topIssues.length > 0) {
-    console.log(chalk.bold('\n🔍 Top Issues\n'));
-    for (const issue of topIssues) {
-      console.log(
-        `${severityColor(issue.severity)(issue.severity.toUpperCase())} ` +
-          `${chalk.dim(`${issue.location.file}:${issue.location.line}`)}`
-      );
-      console.log(`  ${issue.message}`);
-      if (issue.suggestion) {
-        console.log(`  ${chalk.dim('→')} ${chalk.italic(issue.suggestion)}`);
-      }
-      console.log();
-    }
-  }
-
-  if (recommendations.length > 0) {
-    console.log(chalk.bold('💡 Recommendations\n'));
-    recommendations.forEach((rec: string, i: number) => {
-      console.log(`${i + 1}. ${rec}`);
-    });
-  }
-  console.log();
-}
