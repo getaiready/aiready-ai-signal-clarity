@@ -71,7 +71,7 @@ async function analyzeFile(filePath: string): Promise<FileAnalysis> {
         const name = exp.name;
         if (name && name !== 'default') {
           result.exportedNames.push(name);
-          // Split camelCase into terms
+          // Domain consistency terms
           result.domainTerms.push(
             ...name
               .replace(/([A-Z])/g, ' $1')
@@ -80,9 +80,10 @@ async function analyzeFile(filePath: string): Promise<FileAnalysis> {
               .filter(Boolean)
           );
 
-          // Check if it's untyped (heuristic: hasSideEffects is reused here for lack of better field in base LanguageParser for now)
-          // In a real scenario, LanguageParser would need 'isTyped' field.
-          // For now, let's look at the implementation of TypeScriptParser to see if we can infer it.
+          // Check if it's untyped
+          if (exp.isTyped === false) {
+            result.untypedExports++;
+          }
         }
       }
 
@@ -273,11 +274,14 @@ export async function analyzeAgentGrounding(
     });
   }
 
-  if (groundingResult.dimensions.apiClarityScore < 70) {
+  if (untypedExports > 0) {
     issues.push({
       type: IssueType.AgentNavigationFailure,
       dimension: 'api-clarity',
-      severity: Severity.Major,
+      severity:
+        groundingResult.dimensions.apiClarityScore < 70
+          ? Severity.Major
+          : Severity.Minor,
       message: `${untypedExports} of ${totalExports} public exports lack TypeScript type annotations — agents cannot infer the API contract.`,
       location: { file: rootDir, line: 0 },
       suggestion:

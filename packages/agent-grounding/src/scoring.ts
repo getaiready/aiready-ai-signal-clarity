@@ -11,7 +11,13 @@ export function calculateGroundingScore(report: AgentGroundingReport): any {
     toolName: ToolName.AgentGrounding,
     score: summary.score,
     rawData,
-    dimensions: summary.dimensions,
+    dimensions: {
+      structureClarityScore: summary.dimensions.structureClarityScore,
+      selfDocumentationScore: summary.dimensions.selfDocumentationScore,
+      entryPointScore: summary.dimensions.entryPointScore,
+      apiClarityScore: summary.dimensions.apiClarityScore,
+      domainConsistencyScore: summary.dimensions.domainConsistencyScore,
+    },
     dimensionNames: {
       structureClarityScore: 'Structure Clarity',
       selfDocumentationScore: 'Self-Documentation',
