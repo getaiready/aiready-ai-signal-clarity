@@ -31,7 +31,7 @@ export async function scanFile(
     return emptyResult(filePath);
   }
 
-  const parser = getParser(filePath);
+  const parser = await getParser(filePath);
   if (!parser) return emptyResult(filePath);
 
   try {
