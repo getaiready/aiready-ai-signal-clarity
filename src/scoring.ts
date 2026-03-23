@@ -1,4 +1,8 @@
-import { calculateAiSignalClarity, ToolName } from '@aiready/core';
+import {
+  calculateAiSignalClarity,
+  ToolName,
+  buildStandardToolScore,
+} from '@aiready/core';
 import type { ToolScoringOutput } from '@aiready/core';
 import type { AiSignalClarityReport } from './types';
 
@@ -30,31 +34,27 @@ export function calculateAiSignalClarityScore(
   // Invert: high risk = low score
   const score = Math.max(0, 100 - riskResult.score);
 
-  const factors: ToolScoringOutput['factors'] = riskResult.signals.map(
-    (sig) => ({
-      name: sig.name,
-      impact: -sig.riskContribution,
-      description: sig.description,
-    })
-  );
-
-  const recommendations: ToolScoringOutput['recommendations'] =
-    riskResult.recommendations.map((rec) => ({
-      action: rec,
-      estimatedImpact: 8,
-      priority: riskResult.score > 50 ? 'high' : 'medium',
-    }));
-
-  return {
+  return buildStandardToolScore({
     toolName: ToolName.AiSignalClarity,
     score,
-    rawMetrics: {
+    rawData: {
       riskScore: riskResult.score,
       rating: riskResult.rating,
       topRisk: riskResult.topRisk,
       ...aggregateSignals,
     },
-    factors,
-    recommendations,
-  };
+    dimensions: riskResult.dimensions,
+    dimensionNames: {
+      overloadingScore: 'Symbol Overloading',
+      magicLiteralScore: 'Magic Literals',
+      booleanTrapScore: 'Boolean Traps',
+      implicitSideEffectScore: 'Implicit Side Effects',
+      deepCallbackScore: 'Deep Callbacks',
+      ambiguityScore: 'Naming Ambiguity',
+      documentationScore: 'API Documentation',
+      sizeScore: 'File Sizing',
+    },
+    recommendations: riskResult.recommendations,
+    rating: riskResult.rating,
+  });
 }
