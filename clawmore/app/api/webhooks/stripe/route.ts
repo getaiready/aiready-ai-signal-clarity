@@ -13,7 +13,7 @@ const docClient = DynamoDBDocument.from(dbClient);
 const TableName = process.env.DYNAMO_TABLE || '';
 
 export async function POST(req: NextRequest) {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_dummy_123', {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-01-27-acacia' as any,
   });
 
@@ -211,6 +211,118 @@ export async function POST(req: NextRequest) {
               `Invoice paid for sub ${invoice.subscription}. Replenished $10 fuel for user ${userId}.`
             );
           }
+        }
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as any;
+        const customerId = invoice.customer as string;
+        console.warn(
+          `[Webhook] Payment failed for customer ${customerId}, invoice ${invoice.id}`
+        );
+
+        // Find user by Stripe Customer ID
+        const res = await docClient.query({
+          TableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :customerId',
+          ExpressionAttributeValues: {
+            ':customerId': `STRIPE#${customerId}`,
+          },
+        });
+
+        const userItem = res.Items?.[0];
+        if (userItem) {
+          const userId = userItem.PK.replace('USER#', '');
+          // Mark account as payment_failed so access can be restricted
+          await docClient.update({
+            TableName,
+            Key: { PK: `USER#${userId}`, SK: 'METADATA' },
+            UpdateExpression: 'SET paymentStatus = :status, updatedAt = :now',
+            ExpressionAttributeValues: {
+              ':status': 'PAYMENT_FAILED',
+              ':now': new Date().toISOString(),
+            },
+          });
+          console.log(
+            `Marked payment failed for user ${userId} (${customerId})`
+          );
+        }
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string;
+
+        // Find user by Stripe Customer ID
+        const res = await docClient.query({
+          TableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :customerId',
+          ExpressionAttributeValues: {
+            ':customerId': `STRIPE#${customerId}`,
+          },
+        });
+
+        const userItem = res.Items?.[0];
+        if (userItem) {
+          const userId = userItem.PK.replace('USER#', '');
+          await docClient.update({
+            TableName,
+            Key: { PK: `USER#${userId}`, SK: 'METADATA' },
+            UpdateExpression:
+              'SET subscriptionStatus = :status, updatedAt = :now',
+            ExpressionAttributeValues: {
+              ':status': subscription.status,
+              ':now': new Date().toISOString(),
+            },
+          });
+          console.log(
+            `Subscription updated for user ${userId}: ${subscription.status}`
+          );
+        }
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string;
+
+        console.warn(
+          `[Webhook] Subscription cancelled for customer ${customerId}`
+        );
+
+        // Find user by Stripe Customer ID
+        const res = await docClient.query({
+          TableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :customerId',
+          ExpressionAttributeValues: {
+            ':customerId': `STRIPE#${customerId}`,
+          },
+        });
+
+        const userItem = res.Items?.[0];
+        if (userItem) {
+          const userId = userItem.PK.replace('USER#', '');
+          // Downgrade plan and restrict access
+          await docClient.update({
+            TableName,
+            Key: { PK: `USER#${userId}`, SK: 'METADATA' },
+            UpdateExpression:
+              'SET plan = :plan, subscriptionStatus = :status, paymentStatus = :payStatus, updatedAt = :now',
+            ExpressionAttributeValues: {
+              ':plan': 'FREE',
+              ':status': 'CANCELLED',
+              ':payStatus': 'CANCELLED',
+              ':now': new Date().toISOString(),
+            },
+          });
+          console.log(
+            `Downgraded user ${userId} to FREE plan after subscription cancellation`
+          );
         }
         break;
       }

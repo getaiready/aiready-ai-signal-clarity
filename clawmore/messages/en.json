@@ -1,99 +1,102 @@
 {
   "common": {
     "startFree": "Start Free",
-    "managedBetaAccess": "Managed Beta Access",
-    "managedWaitlist": "Join Managed Waitlist",
+    "managedBetaAccess": "Get Managed Access",
+    "managedWaitlist": "Start Managed Plan",
     "requestPriority": "Request Priority Access",
     "joinWaitlist": "Join Waitlist"
   },
   "hero": {
-    "badge": "Autonomous Infrastructure Synthesis",
-    "title1": "Never-Dying,",
-    "title2": "Self-Evolving",
-    "title3": "Claw",
-    "description": "ClawMore understands your goals and automatically handles all the complex cloud updates for you—keeping your system perfectly in sync while you sleep."
+    "badge": "Autonomous Infrastructure Platform",
+    "title1": "Self-Healing,",
+    "title2": "Auto-Improving",
+    "title3": "Cloud",
+    "description": "ClawMore monitors your AWS infrastructure, detects issues, and automatically applies fixes — while you sleep."
   },
   "pillars": {
     "autonomous": {
-      "title": "Autonomous Evolution",
-      "desc": "Recursive Git-driven loops that close the gap between reasoning and code. The system monitors its own performance logs and triggers Self-Correction Requests (SCR) autonomously."
+      "title": "Automated Fixes",
+      "desc": "Continuous monitoring detects performance gaps and code issues. AI generates fixes, commits them to your repo, and runs your tests."
     },
     "neural": {
-      "title": "Neural Spine",
-      "desc": "Architected on AWS EventBridge for decoupled agent coordination. Stateless execution with Unlimited_Breadth via the ClawFlow mesh."
+      "title": "Event-Driven Architecture",
+      "desc": "Built on AWS EventBridge for reliable, decoupled processing. Each fix runs as an isolated job with automatic retry on failure."
     },
     "byoc": {
-      "title": "Ironclad BYOC",
-      "desc": "Keep your neural weight in your own VPC. Deploy with strict Recursion Guards and Human-in-the-Loop context isolation for enterprise safety."
+      "title": "Your Cloud, Your Control",
+      "desc": "Runs entirely in your AWS account. Strict permission boundaries, audit logs, and approval gates keep you in control."
     }
   },
   "evolution": {
-    "title": "The Mutation Cycle",
-    "desc": "Standard agents are transient. ClawMore treats its primary logic as Mutable State. When a capability gap is detected, the Planner synthesizes a patch and the Coder commits it directly to the monorepo branch.",
-    "visualizer": "Core_Process_Visualizer",
-    "logTitle": "Evolution_Stream.log",
-    "logStatus": "SYNCHRONIZED",
-    "logIdentify": "Identified deficiency in AdaptiveRateLimiters",
-    "mutVerified": "MUTATION_VERIFIED",
-    "mutAdded": "+ infra: added JIT concurrency scaling",
+    "title": "How It Works",
+    "desc": "ClawMore runs a continuous improvement loop: scan, plan, fix, verify. Each change is committed to your repo for review.",
+    "visualizer": "Live_Process",
+    "logTitle": "Activity_Log",
+    "logStatus": "MONITORING ACTIVE",
+    "logIdentify": "Detected slow query in user service",
+    "mutVerified": "FIX VERIFIED",
+    "mutAdded": "+ Added query index for 3x faster lookups",
     "steps": [
       {
-        "label": "GAP_DETECTION",
-        "desc": "Reflector identifies functional deficiencies"
+        "label": "DETECT",
+        "desc": "Scans logs and metrics for issues"
       },
       {
-        "label": "SYNTHESIS_PLAN",
-        "desc": "Architect designs the mutation path"
+        "label": "PLAN",
+        "desc": "AI generates a targeted fix"
       },
       {
-        "label": "EXECUTION_OPS",
-        "desc": "Coder implements & SST Ion deploys infra"
+        "label": "APPLY",
+        "desc": "Commits fix to your repository"
       },
       {
-        "label": "GIT_PERSISTENCE",
-        "desc": "Verified code is merged back to main"
+        "label": "VERIFY",
+        "desc": "Runs tests and confirms improvement"
       }
     ]
   },
   "pricing": {
-    "model": "Sustenance_Model",
-    "title": "Transparent Resource Alloc",
-    "subtitle": "Pay for successful mutations only.",
+    "model": "Simple Pricing",
+    "title": "Start Free, Scale When Ready",
+    "subtitle": "No credit card required. Cancel anytime.",
     "community": {
-      "name": "Community_Node",
+      "name": "Free Tier",
       "badge": "OPEN SOURCE",
       "price": "FREE",
-      "subtext": "Self-Hosted & Open Source Forever",
+      "subtext": "Self-hosted, forever free",
       "features": [
-        "Full OSS Core Engine",
-        "Unlimited Local Archetypes",
-        "Complete VPC Isolation",
-        "MIT Licensed"
+        "Full analysis engine (CLI)",
+        "3 repositories",
+        "10 scans per month",
+        "7-day history",
+        "Community support"
       ]
     },
     "managed": {
-      "name": "Managed_Core",
-      "badge": "MANAGED",
+      "name": "Managed",
+      "badge": "MOST POPULAR",
       "price": "$29",
       "period": "/mo",
-      "subtext": "Infrastructure + Cloud Ops",
+      "subtext": "Managed infra + $10 AI credit included",
       "features": [
-        "Remote SaaS Dashboard",
-        "Auto-Mutation Sync",
-        "Priority 24/7 Feedback Loop"
+        "Dashboard & trend tracking",
+        "AI-powered auto-fixes",
+        "CI/CD integration",
+        "Priority support",
+        "$10/month AI token credit"
       ]
     },
     "tax": {
-      "title": "Autonomous_Evolution.sh",
-      "desc": "Evolution is **FREE** for Co-evolution partners. By allowing our Management Plane to learn from your anonymous optimizations, you pay $0.00 for mutations. Private/One-Way evolution is $1.00 per verified commit."
+      "title": "How AI Credits Work",
+      "desc": "Your $10/month credit covers AI-powered code fixes. When you run low, top up with a $10 fuel pack. You only pay for what you use — no hidden fees."
     }
   },
   "faq": {
     "title": "Frequently Asked Questions"
   },
   "footer": {
-    "ecosystem": "Part of the AIReady_Ecosystem neural network.",
-    "copyright": "© 2026 PERPETUAL_EVOLUTION. TERMINAL_LOCKED."
+    "ecosystem": "Part of the",
+    "copyright": " 2026 ClawMore. All rights reserved."
   },
   "navbar": {
     "features": "Features",

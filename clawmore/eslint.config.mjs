@@ -12,6 +12,7 @@ const eslintConfig = [
       'build/**',
       'next-env.d.ts',
       'coverage/**',
+      '**/sst-env.d.ts',
     ],
   },
   ...nextVitals,

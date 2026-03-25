@@ -28,7 +28,7 @@ export default $config({
 
     // Configure the Stripe provider explicitly
     const stripeProvider = new (stripe as any).Provider('StripeProvider', {
-      apiKey: process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder',
+      apiKey: process.env.STRIPE_SECRET_KEY!,
     });
 
     const domainName = isProd
@@ -43,7 +43,7 @@ export default $config({
       {
         name: 'ClawMore Managed Platform',
         description:
-          'Fully managed serverless AWS infrastructure with AI evolution.',
+          'Managed AWS infrastructure, AI-powered code fixes, CI/CD integration, and dashboard.',
       },
       { provider: stripeProvider }
     );
@@ -59,12 +59,12 @@ export default $config({
       { provider: stripeProvider }
     );
 
-    // 2. AI Fuel Pack ($10.00 one-time)
+    // 2. AI Fuel Pack ($10.00 one-time top-up)
     const fuelPackProduct = new (stripe as any).Product(
       'FuelPackProduct',
       {
-        name: 'AI Fuel Pack',
-        description: 'Pre-paid intelligence credits for agent mutations.',
+        name: 'AI Credit Pack',
+        description: '$10 top-up for AI-powered code fixes.',
       },
       { provider: stripeProvider }
     );
@@ -79,7 +79,25 @@ export default $config({
       { provider: stripeProvider }
     );
 
+    // 3. Stripe Webhook Endpoint — tells Stripe where to send events
+    const webhookEndpoint = new (stripe as any).WebhookEndpoint(
+      'StripeWebhook',
+      {
+        url: `https://${domainName}/api/webhooks/stripe`,
+        enabledEvents: [
+          'checkout.session.completed',
+          'invoice.paid',
+          'invoice.payment_failed',
+          'customer.subscription.updated',
+          'customer.subscription.deleted',
+        ],
+      },
+      { provider: stripeProvider }
+    );
+
     // Storage for ClawMore Managed Platform data
+    // NOTE: Enable Point-in-Time Recovery (PITR) via AWS Console after deployment
+    // for production data protection. SST v4 does not expose PITR in constructor.
     const table = new sst.aws.Dynamo('ClawMoreTable', {
       fields: {
         PK: 'string',
@@ -111,7 +129,7 @@ export default $config({
     new aws.sns.TopicSubscription('LeadEmailSubscription', {
       topic: topic.arn,
       protocol: 'email',
-      endpoint: 'caopengau@gmail.com',
+      endpoint: process.env.ADMIN_NOTIFICATION_EMAIL!,
     });
 
     // API Gateway for lead submissions (standalone to match landing pattern)
@@ -206,7 +224,7 @@ export default $config({
         LEADS_BUCKET: leads.name,
         DYNAMO_TABLE: table.name,
         STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
-        STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
+        STRIPE_WEBHOOK_SECRET: webhookEndpoint.secret,
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
           process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
         OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
@@ -235,6 +253,7 @@ export default $config({
       domain: domainName,
       apiUrl: api.url,
       leadsBucket: leads.name,
+      stripeWebhookUrl: webhookEndpoint.url,
     };
   },
 });

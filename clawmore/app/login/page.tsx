@@ -203,10 +203,16 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="mt-12 text-center">
+        <div className="mt-12 text-center space-y-3">
+          <p className="text-xs text-zinc-500 font-mono">
+            New to ClawMore?{' '}
+            <Link href="/signup" className="text-cyber-blue hover:underline">
+              Create an account
+            </Link>
+          </p>
           <Link
             href="/admin/login"
-            className="text-[10px] font-mono text-zinc-800 hover:text-zinc-600 transition-colors uppercase tracking-[0.2em]"
+            className="text-[10px] font-mono text-zinc-800 hover:text-zinc-600 transition-colors uppercase tracking-[0.2em] block"
           >
             System Administrator? Access Root
           </Link>

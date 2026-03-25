@@ -33,8 +33,8 @@ test.describe('ClawMore Lead Generation & Admin', () => {
     // Verify login page structure
     await expect(page.locator('h1')).toContainText('Admin Access');
 
-    // Enter password (using the default for testing if not set)
-    await page.fill('input[type="password"]', 'clawmore-admin-2026');
+    // Enter password (using env var for testing)
+    await page.fill('input[type="password"]', process.env.ADMIN_PASSWORD || '');
     await page.click('button:has-text("Authenticate")');
 
     // Should redirect to leads dashboard

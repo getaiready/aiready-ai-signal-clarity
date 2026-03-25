@@ -5,7 +5,7 @@ let stripeClient: Stripe | null = null;
 
 function getStripe(): Stripe {
   if (!stripeClient) {
-    stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_dummy_123', {
+    stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: '2025-01-27-acacia' as any,
     });
   }
@@ -61,9 +61,9 @@ export async function createPlatformSubscriptionSession(
             price_data: {
               currency: 'usd',
               product_data: {
-                name: 'ClawMore Managed Platform Subscription',
+                name: 'ClawMore Managed Platform',
                 description:
-                  '$29.00/mo for managed serverless infrastructure + AI evolution guardrails.',
+                  'Managed AWS infrastructure, AI-powered fixes, CI/CD integration, and dashboard.',
               },
               unit_amount: 2900,
               recurring: { interval: 'month' },
@@ -166,8 +166,8 @@ export async function createFuelPackCheckout(
             price_data: {
               currency: 'usd',
               product_data: {
-                name: 'ClawMore AI Fuel Pack ($10.00)',
-                description: 'Adds $10.00 to your pre-paid AI token balance.',
+                name: 'ClawMore AI Credit Pack ($10)',
+                description: '$10 top-up for AI-powered code fixes.',
               },
               unit_amount: 1000,
             },

@@ -131,7 +131,7 @@ export default function DashboardClient({
           <div className="bg-zinc-900/50 border border-white/5 rounded-3xl p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <h2 className="text-2xl font-black italic mb-10 tracking-tight text-white uppercase flex items-center gap-3">
               <Layers className="w-5 h-5 text-cyber-blue" />
-              System <span className="text-cyber-blue">Overview</span>
+              Account <span className="text-cyber-blue">Overview</span>
             </h2>
 
             <div className="space-y-8">
@@ -218,31 +218,31 @@ export default function DashboardClient({
 
               <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-8">
                 <h3 className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-6">
-                  System Heartbeat
+                  Quick Stats
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
                     {
-                      label: 'Active Mutations',
+                      label: 'Auto-Fixes Applied',
                       value: status.mutationCount,
                       icon: Activity,
                       color: 'text-cyber-purple',
                     },
                     {
-                      label: 'Neural Throughput',
-                      value: '42 ops/s',
+                      label: 'Scans Today',
+                      value: '42',
                       icon: Zap,
                       color: 'text-amber-500',
                     },
                     {
-                      label: 'Resource Integrity',
+                      label: 'Health Score',
                       value: '100%',
                       icon: Shield,
                       color: 'text-emerald-500',
                     },
                     {
-                      label: 'Managed Nodes',
-                      value: '1 Active',
+                      label: 'Active Repos',
+                      value: '1',
                       icon: Layers,
                       color: 'text-cyber-blue',
                     },
@@ -269,7 +269,7 @@ export default function DashboardClient({
                 <div className="absolute inset-0 bg-gradient-to-br from-cyber-blue/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <h2 className="text-xl font-bold mb-8 flex items-center gap-3 italic">
                   <Activity className="w-5 h-5 text-cyber-blue" />
-                  Recent Activity
+                  Recent Fixes
                 </h2>
 
                 <div className="space-y-4">
@@ -313,7 +313,10 @@ export default function DashboardClient({
                   ) : (
                     <div className="py-12 text-center bg-black/20 border border-white/5 border-dashed rounded-2xl">
                       <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
-                        No Recent Mutations Recorded
+                        No fixes applied yet
+                      </p>
+                      <p className="text-[9px] text-zinc-700 mt-2 font-mono">
+                        Fixes will appear here after your first scan
                       </p>
                     </div>
                   )}
@@ -412,29 +415,28 @@ export default function DashboardClient({
         ) : activeTab === 'settings' ? (
           <div className="bg-zinc-900/50 border border-white/5 rounded-3xl p-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
             <h2 className="text-2xl font-black italic mb-10 tracking-tight text-white uppercase">
-              Platform <span className="text-cyber-blue">Core</span> Params
+              AI Credits & <span className="text-cyber-blue">Settings</span>
             </h2>
 
             <div className="space-y-12">
               <div>
                 <h3 className="text-sm font-black text-amber-500 mb-3 flex items-center gap-2 uppercase tracking-tight">
-                  <Zap className="w-4 h-4" /> Mutation Tax & Co-evolution
+                  <Zap className="w-4 h-4" /> Credit Sharing & Savings
                 </h3>
                 <p className="text-xs text-zinc-500 mb-8 leading-relaxed font-mono italic max-w-2xl">
-                  ClawMore's $1.00 Mutation Tax is waived for partners who
-                  opt-in to co-evolve. By allowing our Harvester sync
-                  non-sensitive architectural patterns, you help improve the
-                  engine for everyone.
+                  Share anonymous code patterns with our community to earn
+                  credit discounts. Your code stays private — we only learn from
+                  the structure, never the content.
                 </p>
 
                 <div className="bg-black/60 p-8 rounded-3xl border border-white/5 space-y-8 shadow-2xl">
                   <div className="flex items-center justify-between gap-6">
                     <div>
                       <p className="text-sm font-black italic text-white uppercase tracking-tight">
-                        Enable Co-evolution Syncing
+                        Share Patterns for Discounts
                       </p>
                       <p className="text-[10px] text-zinc-600 uppercase tracking-widest mt-1">
-                        Architecture patterns shared for ecosystem refinement
+                        Anonymous code structure shared to improve the platform
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer scale-110">
@@ -571,19 +573,19 @@ export default function DashboardClient({
                   <Zap className="absolute -top-12 -left-12 w-64 h-64 opacity-5 text-white group-hover:scale-110 transition-transform duration-1000" />
                   <div className="relative z-10">
                     <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.5em] mb-4">
-                      Subscription Plan
+                      Your Plan
                     </p>
                     <h4 className="text-3xl md:text-4xl font-black italic mb-6 text-white leading-tight uppercase tracking-tighter">
-                      Managed <br />
+                      Managed
+                      <br />
                       <span className="text-cyber-blue">Platform</span>
                     </h4>
                     <p className="text-xs text-zinc-500 mb-10 leading-relaxed font-mono italic">
-                      $29/mo premium tier. Full infrastructure management,
-                      zero-idle optimization, and 100k mutation packets per
-                      month.
+                      $29/mo includes managed infrastructure, AI-powered fixes,
+                      CI/CD integration, and $10/month in AI credits.
                     </p>
                     <button className="w-full py-4 bg-white hover:bg-zinc-200 text-black rounded-2xl text-xs font-black uppercase italic tracking-widest transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:shadow-white/20">
-                      Manage Stripe Portal
+                      Manage Subscription
                     </button>
                   </div>
                 </div>
@@ -592,11 +594,10 @@ export default function DashboardClient({
                   <div className="flex justify-between items-start mb-10">
                     <div className="space-y-1">
                       <h3 className="text-sm font-black text-white flex items-center gap-3 uppercase italic tracking-tight">
-                        <Zap className="w-4 h-4 text-amber-500" /> Auto-Refill
-                        Engine
+                        <Zap className="w-4 h-4 text-amber-500" /> Auto Top-Up
                       </h3>
                       <p className="text-[8px] text-zinc-600 uppercase tracking-[0.4em] font-mono">
-                        Continuous Evolution Active
+                        Never run out of AI credits
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer scale-110">

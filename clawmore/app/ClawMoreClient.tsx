@@ -54,35 +54,29 @@ export default function ClawMoreClient({ apiUrl, dict }: ClawMoreClientProps) {
   // Fallback to static strings if dict is not yet updated for everything
   const FAQ_ITEMS = [
     {
-      question: dict.faq?.q1 || 'What exactly is ClawMore?',
+      question: 'What is ClawMore?',
       answer:
-        dict.faq?.a1 ||
-        'ClawMore is an autonomous agentic system built for AWS. Unlike standard AI assistants that just provide code snippets, ClawMore interprets your intent, designs infrastructure mutations, and persists them directly to your source control using SST Ion.',
+        'ClawMore is an autonomous platform that manages your AWS infrastructure and automatically improves your codebase. It monitors your system, detects issues, and applies fixes — so you can focus on building features.',
     },
     {
-      question: dict.faq?.q2 || 'How does the Autonomous Evolution loop work?',
+      question: 'How does the auto-fix system work?',
       answer:
-        dict.faq?.a2 ||
-        'It uses a "Reflector" agent that monitors system logs and performance. When it detects a gap or opportunity for optimization, it triggers a Self-Correction Request (SCR). An "Architect" then designs a patch, and a "Coder" executes the mutation via Git.',
+        'ClawMore runs a continuous loop: it scans your logs and performance data, identifies areas for improvement, generates a code fix using AI, and commits it to your repository. You review and approve every change.',
     },
     {
-      question:
-        dict.faq?.q3 || 'Is it safe to give ClawMore access to my AWS account?',
+      question: 'Is it safe to connect my AWS account?',
       answer:
-        dict.faq?.a3 ||
-        'Yes. ClawMore uses "Bring Your Own Cloud" (BYOC) architecture. It runs within your own VPC with strict IAM boundaries and Recursion Guards that prevent runaway mutations. You maintain full control over approval gates for high-risk changes.',
+        'Yes. ClawMore runs in your own AWS account (BYOC), not ours. It uses strict permission boundaries that prevent it from accessing data outside your infrastructure. You maintain full control.',
     },
     {
-      question: dict.faq?.q4 || 'Is Autonomous Evolution free?',
+      question: 'What does the $29/month include?',
       answer:
-        dict.faq?.a4 ||
-        'Yes! For Co-evolution partners, evolution is $0.00. We only charge a $1.00 "One-Way Fee" for clients who choose to keep their optimizations strictly private and isolated from the collective intelligence of the Hub.',
+        'Your subscription includes managed infrastructure, a web dashboard, automated code improvements, CI/CD integration, and $10/month in AI credits for code fixes. You can cancel anytime.',
     },
     {
-      question: dict.faq?.q5 || 'How do I get started for free?',
+      question: 'Can I try it for free?',
       answer:
-        dict.faq?.a5 ||
-        'The Community Node is 100% open source and free forever. You can fork the repository, deploy it to your own AWS account, and start using the core autonomous engine today.',
+        "Absolutely. The free tier includes our full analysis CLI, 3 repositories, and 10 scans per month. No credit card required. Upgrade when you're ready.",
     },
   ];
 
@@ -140,7 +134,7 @@ export default function ClawMoreClient({ apiUrl, dict }: ClawMoreClientProps) {
 
           <div className="w-full max-w-lg sm:max-w-none flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4 sm:gap-8">
             <Link
-              href="https://github.com/caopengau/serverlessclaw"
+              href="/signup"
               className="w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-5 rounded-sm bg-white text-black hover:bg-cyber-blue transition-all font-black uppercase tracking-widest flex items-center justify-center gap-3 group shadow-[0_0_50px_rgba(255,255,255,0.2)] text-center"
             >
               {dict.common.startFree}
@@ -373,7 +367,7 @@ export default function ClawMoreClient({ apiUrl, dict }: ClawMoreClientProps) {
                 )}
               </ul>
               <Link
-                href="https://github.com/caopengau/serverlessclaw"
+                href="/signup"
                 className="w-full py-5 rounded-sm bg-purple-600 hover:bg-purple-500 transition-all text-white text-xs font-black uppercase text-center tracking-widest shadow-[0_0_25px_rgba(188,0,255,0.2)]"
               >
                 {dict.common.startFree} (OSS)
@@ -412,7 +406,7 @@ export default function ClawMoreClient({ apiUrl, dict }: ClawMoreClientProps) {
                 )}
               </ul>
               <Link
-                href="#waitlist"
+                href="/signup"
                 className="w-full py-5 rounded-sm bg-cyber-blue hover:bg-cyber-blue/90 transition-all text-black text-xs font-black uppercase text-center tracking-widest shadow-[0_0_25px_rgba(0,224,255,0.2)]"
               >
                 {dict.common.managedWaitlist}

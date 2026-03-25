@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   // 1. Strict Authorization (Admin or Approved Beta)
   const adminEmails = process.env.ADMIN_EMAILS
     ? process.env.ADMIN_EMAILS.split(',').map((e) => e.trim())
-    : ['caopengau@gmail.com'];
+    : [];
 
   const isAdmin = adminEmails.includes(userEmail);
   const status = await getUserStatus(userEmail);

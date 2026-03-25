@@ -208,11 +208,17 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
 
         const foundUser = res.Items?.[0];
 
-        // If user doesn't exist yet, NextAuth will create it.
-        // We'll allow the first sign-in but check 'approved' status in dashboard/authorized.
-        // BUT the user said "only user invited and approved can signin".
-        // To be strict, we return false or redirect if not found or not approved.
-        if (!foundUser || foundUser.status !== 'APPROVED') {
+        // If user doesn't exist yet, redirect to signup
+        if (!foundUser) {
+          return `/signup?email=${encodeURIComponent(email)}`;
+        }
+
+        // Allow PENDING users through - they'll be redirected to checkout
+        if (foundUser.status === 'PENDING') {
+          return true;
+        }
+
+        if (foundUser.status !== 'APPROVED') {
           return `/unauthorized?email=${encodeURIComponent(email)}`;
         }
 

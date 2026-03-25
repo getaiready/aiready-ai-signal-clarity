@@ -14,7 +14,7 @@ export async function GET() {
   const session = await auth();
   const adminEmails = process.env.ADMIN_EMAILS
     ? process.env.ADMIN_EMAILS.split(',').map((e) => e.trim())
-    : ['caopengau@gmail.com'];
+    : [];
 
   if (!session?.user?.email || !adminEmails.includes(session.user.email)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -42,7 +42,7 @@ export async function PATCH(request: Request) {
   const session = await auth();
   const adminEmails = process.env.ADMIN_EMAILS
     ? process.env.ADMIN_EMAILS.split(',').map((e) => e.trim())
-    : ['caopengau@gmail.com'];
+    : [];
 
   if (!session?.user?.email || !adminEmails.includes(session.user.email)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
   const session = await auth();
   const adminEmails = process.env.ADMIN_EMAILS
     ? process.env.ADMIN_EMAILS.split(',').map((e) => e.trim())
-    : ['caopengau@gmail.com'];
+    : [];
 
   if (!session?.user?.email || !adminEmails.includes(session.user.email)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
