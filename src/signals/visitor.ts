@@ -97,16 +97,54 @@ export function detectStructuralSignals(
       }
       // ESTree (TypeScript, JavaScript)
       else if (node.type === 'Literal') {
-        const isNamedConstant =
-          parent?.type === 'VariableDeclarator' &&
-          parent.id.type === 'Identifier' &&
-          /^[A-Z0-9_]{3,}$/.test(parent.id.name);
+        let isNamedConstant = false;
+
+        // Check if this literal is part of a constant declaration (possibly nested in Array/Set/Object)
+        let depth = 0;
+        let p = parent;
+        while (p && depth < 5) {
+          if (
+            p.type === 'VariableDeclarator' &&
+            p.id.type === 'Identifier' &&
+            /^[A-Z0-9_]{2,}$/.test(p.id.name)
+          ) {
+            isNamedConstant = true;
+            break;
+          }
+          if (
+            [
+              'ArrayExpression',
+              'NewExpression',
+              'Property',
+              'ObjectExpression',
+              'TSAsExpression',
+              'TSTypeAssertion',
+            ].includes(p.type)
+          ) {
+            p = p.parent;
+            depth++;
+          } else {
+            break;
+          }
+        }
+
+        // Fallback for manual recursion where .parent might not be set on nodes
+        if (!isNamedConstant) {
+          isNamedConstant =
+            parent?.type === 'VariableDeclarator' &&
+            parent.id.type === 'Identifier' &&
+            /^[A-Z0-9_]{2,}$/.test(parent.id.name);
+
+          if (!isNamedConstant && parent?.type === 'ArrayExpression') {
+            // We don't have grandparent here easily without changing visitNode signature
+            // or relying on .parent being set.
+          }
+        }
 
         const isObjectKey =
           parent?.type === 'Property' && keyInParent === 'key';
 
-        const isJSXClassName =
-          parent?.type === 'JSXAttribute' && parent.name?.name === 'className';
+        const isJSXAttribute = parent?.type === 'JSXAttribute';
 
         const redundantType =
           typeof node.value === 'string'
@@ -133,7 +171,7 @@ export function detectStructuralSignals(
             },
             suggestion: `Use '${node.value}' directly in your schema.`,
           });
-        } else if (isNamedConstant || isObjectKey || isJSXClassName) {
+        } else if (isNamedConstant || isObjectKey || isJSXAttribute) {
           // Skip magic literal check for these contextually safe literals
         } else if (
           typeof node.value === 'number' &&
@@ -294,10 +332,12 @@ export function detectStructuralSignals(
           if (Array.isArray(child)) {
             child.forEach((c) => {
               if (c && typeof c.type === 'string') {
+                c.parent = node;
                 visitNode(c, node, key);
               }
             });
           } else if (typeof child.type === 'string') {
+            child.parent = node;
             visitNode(child, node, key);
           }
         }

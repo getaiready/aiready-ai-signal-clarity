@@ -87,6 +87,20 @@ export const MAGIC_STRING_IGNORE = new Set([
   'dynamodb:DeleteItem',
   'dynamodb:Query',
   'dynamodb:Scan',
+  'critical',
+  'major',
+  'minor',
+  'info',
+  'patterns',
+  'context',
+  'consistency',
+  'fragmentation',
+  'grounding',
+  'testability',
+  'deps',
+  'contract',
+  'compliance',
+  'risk',
 ]);
 
 const TAILWIND_PATTERN = /^[a-z0-9:-]+(\/[0-9]+)?$/;
@@ -108,6 +122,8 @@ export function isMagicString(value: string): boolean {
   if (MAGIC_STRING_IGNORE.has(value.toLowerCase())) return false;
 
   if (TAILWIND_PATTERN.test(value) && value.includes('-')) return false;
+  if (/^(gpt|claude|gemini|llama|mixtral|anthropic|openai)-/i.test(value))
+    return false;
   if (value === value.toUpperCase() && value.length > 3) return false;
   if (DESCRIPTIVE_NAME_PATTERN.test(value)) return false;
   if (/[/.]/.test(value)) return false;
