@@ -126,20 +126,19 @@ export function detectStructuralSignals(
         } else if (tsNode.type === 'string' || tsNode.type === 'string_literal') {
           const val = tsNode.text.replace(/['"]/g, '');
           // Heuristic: ignore if it's likely a key in a map/dictionary (Tree-sitter)
-          const isKey =
-            tsNode.parent?.type?.includes('pair') ||
-            tsNode.parent?.type === 'assignment_expression';
+            const isKey =
+              tsNode.parent?.type?.includes('pair') ||
+              tsNode.parent?.type === 'assignment_expression';
 
           // Skip if it's an import/require/use statement (Tree-sitter)
-          const isImport =
-            tsNode.parent?.type?.toLowerCase().includes('import') ||
-            tsNode.parent?.type?.toLowerCase().includes('require') ||
-            tsNode.parent?.type?.toLowerCase().includes('use');
+            const isImport =
+              tsNode.parent?.type?.toLowerCase().includes('import') ||
+              tsNode.parent?.type?.toLowerCase().includes('require') ||
+              tsNode.parent?.type?.toLowerCase().includes('use');
 
-          const parentName =
-            (tsNode.parent as any)?.nameNode?.text ||
-            tsNode.parent?.childForFieldName('name')?.text ||
-            '';
+            const parentName =
+              tsNode.parent?.childForFieldName('name')?.text ||
+              '';
 
           const isNamedConstant = /^[A-Z0-9_]{2,}$/.test(parentName);
 
@@ -216,7 +215,7 @@ export function detectStructuralSignals(
                 'TSTypeAssertion',
               ].includes(p.type)
             ) {
-              p = (p as any).parent as TSESTree.Node | undefined;
+              p = (p as { parent?: TSESTree.Node }).parent;
               depth++;
             } else {
               break;
@@ -252,9 +251,9 @@ export function detectStructuralSignals(
           // Check if this is a value in a JSX style object (Issue: Context-Blind CSS analysis)
           let isStyleValue = false;
           if (esParent?.type === 'Property' && keyInParent === 'value') {
-            let p: TSESTree.Node | undefined = (esParent as any).parent; // ObjectExpression
+            let p: TSESTree.Node | undefined = (esParent as { parent?: TSESTree.Node }).parent; // ObjectExpression
             while (p && p.type === 'ObjectExpression') {
-              const grandParent: TSESTree.Node | undefined = (p as any).parent;
+              const grandParent: TSESTree.Node | undefined = (p as { parent?: TSESTree.Node }).parent;
               if (grandParent?.type === 'JSXExpressionContainer') {
                 const attr = grandParent.parent;
                 if (
@@ -269,7 +268,7 @@ export function detectStructuralSignals(
               // Could be nested: style={{ base: { display: 'flex' } }}
               p =
                 grandParent?.type === 'Property'
-                  ? (grandParent as any).parent
+                  ? (grandParent as { parent?: TSESTree.Node }).parent
                   : undefined;
             }
           }
@@ -292,7 +291,7 @@ export function detectStructuralSignals(
               category: CATEGORY_REDUNDANT_TYPE_CONSTANT,
               severity: Severity.Minor,
               message: `Redundant type constant "${
-                (esParent as any).id.name
+                (esParent as { id?: { name?: string } }).id?.name
               }" = '${
                 esLiteral.value
               }' — in modern AI-native code, use literals or centralized union types for transparency.`,
@@ -417,7 +416,7 @@ export function detectStructuralSignals(
                 message: `Boolean trap: positional boolean argument at call site. AI inverts intent ~30% of the time.`,
                 location: {
                   file: filePath,
-                  line: (esNode as any).loc?.start.line || 1,
+                  line: esNode.loc?.start.line || 1,
                 },
                 suggestion:
                   'Replace boolean arg with a named options object or separate functions.',
@@ -462,10 +461,10 @@ export function detectStructuralSignals(
             const isDataFromJson =
               esNode.id.name === 'data' &&
               esNode.init &&
-              ctx.code
+                ctx.code
                 .slice(
-                  (esNode.init as any).range?.[0] || 0,
-                  (esNode.init as any).range?.[1] || 0
+                  (esNode.init as { range?: [number, number] }).range?.[0] || 0,
+                  (esNode.init as { range?: [number, number] }).range?.[1] || 0
                 )
                 .includes('.json()');
 
@@ -478,7 +477,7 @@ export function detectStructuralSignals(
                 message: `Ambiguous variable name "${esNode.id.name}" — AI intent is unclear.`,
                 location: {
                   file: filePath,
-                  line: (esNode as any).loc?.start.line || 1,
+                  line: esNode.loc?.start.line || 1,
                 },
               });
             }
