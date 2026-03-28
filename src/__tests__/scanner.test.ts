@@ -29,7 +29,7 @@ describe('AI Signal Clarity Scanner', () => {
         function calculate() {
           // These are magic literals
           const timeout = setTimeout(() => {}, 5000);
-          if (status === "failed") {
+          if (status === "unrecognized") {
             return 402;
           }
         }
@@ -47,7 +47,8 @@ describe('AI Signal Clarity Scanner', () => {
       expect(issues.length).toBeGreaterThanOrEqual(1);
       expect(issues.some((i) => i.message.includes('5000'))).toBe(true);
       expect(issues.some((i) => i.message.includes('402'))).toBe(true);
-      expect(issues.some((i) => i.message.includes('failed'))).toBe(true);
+      // "failed" is now ignored, so we use "unrecognized"
+      expect(issues.some((i) => i.message.includes('unrecognized'))).toBe(true);
       expect((result.signals as any).magicLiterals).toBeGreaterThanOrEqual(3);
     });
 
@@ -178,7 +179,7 @@ describe('AI Signal Clarity Scanner', () => {
         }
         const temp = {};
         const data = [];
-        const result = 1;
+        const stuff = 1;
       `
       );
 
@@ -190,7 +191,7 @@ describe('AI Signal Clarity Scanner', () => {
         (i) => i.category === 'ambiguous-name'
       );
 
-      expect(issues.length).toBeGreaterThanOrEqual(3); // temp, data, result
+      expect(issues.length).toBeGreaterThanOrEqual(3); // temp, data, stuff
       expect(issues.some((i) => i.message.includes('"temp"'))).toBe(true);
       expect((result.signals as any).ambiguousNames).toBeGreaterThanOrEqual(1);
     });

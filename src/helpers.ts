@@ -5,14 +5,15 @@
 import { classifyStringLiteral, StringCategory } from './string-classifier';
 
 export const AMBIGUOUS_NAME_PATTERNS = [
-  /^[a-z]$/, // single letter: a, b, x, y
-  /^(tmp|temp|data|obj|val|res|ret|result|item|elem|thing|stuff|info|misc|util|helper|cb|fn|func)$/i, // Removed 'handler' - it's a Lambda convention
-  /^[a-z]\d+$/, // x1, x2, n3
+  /^[a-ce-hj-z]$/, // single letter except d, i, s (common/accepted)
+  /^(tmp|temp|data|obj|val|res|ret|elem|thing|stuff|info|misc|util|helper|fn|func)$/i, // Removed 'result', 'cb', 'item', 'handler'
+  /^[a-rt-z]\d+$/, // x1, x2, n3 (except s3)
 ];
 
 export const MAGIC_LITERAL_IGNORE = new Set([
-  0, 1, -1, 2, 10, 100, 1000, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 30, 60, 24,
-  7, 365, 200, 201, 204, 400, 401, 403, 404, 500, 80, 443, 3000, 8000, 8080,
+  0, 1, -1, 2, 3, 4, 5, 7, 8, 10, 12, 14, 16, 18, 24, 30, 32, 60, 64, 80, 100,
+  128, 200, 201, 204, 256, 365, 400, 401, 403, 404, 429, 443, 500, 503, 512,
+  1000, 1024, 3000, 8000, 8080,
 ]);
 export const MAGIC_STRING_IGNORE = new Set([
   '',
@@ -137,6 +138,16 @@ export const MAGIC_STRING_IGNORE = new Set([
   'rust',
   'ruby',
   'php',
+  'zod',
+  'dotenv',
+  'fs',
+  'path',
+  'child_process',
+  'util',
+  'uuid',
+  // Next.js directive
+  'use client',
+  'use server',
   // MIME types (Issue 1: Context-Blind String Analysis)
   'text',
   'application',
@@ -345,6 +356,19 @@ export const MAGIC_STRING_IGNORE = new Set([
   'chunk',
   'zip',
   'unzip',
+  // Statuses (Category 4)
+  'completed',
+  'failed',
+  'unknown',
+  'healthy',
+  'closed',
+  'high',
+  'medium',
+  'low',
+  'success',
+  'pending',
+  'running',
+  'stopped',
 ]);
 
 const TAILWIND_PATTERN = /^[a-z0-9:-]+(\/[0-9]+)?$/;
@@ -368,6 +392,7 @@ export function isMagicString(value: string): boolean {
   if (TAILWIND_PATTERN.test(value) && value.includes('-')) return false;
   if (/^(gpt|claude|gemini|llama|mixtral|anthropic|openai)-/i.test(value))
     return false;
+  if (/^(rate|cron)\(.+\)$/.test(value)) return false; // AWS EventBridge expressions
   if (value === value.toUpperCase() && value.length > 3) return false;
   if (DESCRIPTIVE_NAME_PATTERN.test(value)) return false;
   if (/[/.]/.test(value)) return false;

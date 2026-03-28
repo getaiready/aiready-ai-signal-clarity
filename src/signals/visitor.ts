@@ -107,12 +107,18 @@ export function detectStructuralSignals(
           node.parent?.type?.includes('pair') ||
           node.parent?.type === 'assignment_expression';
 
+        // Skip if it's an import/require/use statement (Tree-sitter)
+        const isImport =
+          node.parent?.type?.toLowerCase().includes('import') ||
+          node.parent?.type?.toLowerCase().includes('require') ||
+          node.parent?.type?.toLowerCase().includes('use');
+
         const parentName =
           node.parent?.nameNode?.text ||
           node.parent?.childForFieldName('name')?.text ||
           '';
 
-        if (!isKey && isRedundantTypeConstant(parentName, val)) {
+        if (!isKey && !isImport && isRedundantTypeConstant(parentName, val)) {
           issues.push({
             type: IssueType.AiSignalClarity,
             category: CATEGORY_REDUNDANT_TYPE_CONSTANT,
@@ -124,7 +130,7 @@ export function detectStructuralSignals(
             },
             suggestion: `Use '${val}' directly in your schema.`,
           });
-        } else if (!isKey && isMagicString(val)) {
+        } else if (!isKey && !isImport && isMagicString(val)) {
           // Check if this is a domain-specific term
           const isDomain =
             domainVocabulary && domainVocabulary.has(val.toLowerCase());
@@ -195,6 +201,19 @@ export function detectStructuralSignals(
 
         const isJSXAttribute = parent?.type === 'JSXAttribute';
 
+        // Skip magic literal check for import/export sources (Category 1)
+        const isImportSource =
+          (parent?.type === 'ImportDeclaration' ||
+            parent?.type === 'ExportNamedDeclaration' ||
+            parent?.type === 'ExportAllDeclaration') &&
+          keyInParent === 'source';
+
+        // Skip magic literal check for common require arg (Category 1)
+        const isRequireArg =
+          parent?.type === 'CallExpression' &&
+          parent.callee?.type === 'Identifier' &&
+          parent.callee?.name === 'require';
+
         const redundantType =
           typeof node.value === 'string'
             ? isRedundantTypeConstant(
@@ -220,7 +239,13 @@ export function detectStructuralSignals(
             },
             suggestion: `Use '${node.value}' directly in your schema.`,
           });
-        } else if (isNamedConstant || isObjectKey || isJSXAttribute) {
+        } else if (
+          isNamedConstant ||
+          isObjectKey ||
+          isJSXAttribute ||
+          isImportSource ||
+          isRequireArg
+        ) {
           // Skip magic literal check for these contextually safe literals
         } else if (
           typeof node.value === 'number' &&

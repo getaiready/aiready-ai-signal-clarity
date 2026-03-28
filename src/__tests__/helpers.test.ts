@@ -11,6 +11,9 @@ describe('isAmbiguousName', () => {
     expect(isAmbiguousName('a')).toBe(true);
     expect(isAmbiguousName('x')).toBe(true);
     expect(isAmbiguousName('z')).toBe(true);
+    // Common loop/coord variables should be accepted
+    expect(isAmbiguousName('i')).toBe(false);
+    expect(isAmbiguousName('d')).toBe(false);
   });
 
   it('should detect common ambiguous patterns', () => {
@@ -20,14 +23,19 @@ describe('isAmbiguousName', () => {
     expect(isAmbiguousName('obj')).toBe(true);
     expect(isAmbiguousName('val')).toBe(true);
     expect(isAmbiguousName('res')).toBe(true);
-    expect(isAmbiguousName('result')).toBe(true);
-    expect(isAmbiguousName('item')).toBe(true);
+    // Universally understood names should be accepted
+    expect(isAmbiguousName('result')).toBe(false);
+    expect(isAmbiguousName('item')).toBe(false);
+    expect(isAmbiguousName('cb')).toBe(false);
+    expect(isAmbiguousName('handler')).toBe(false);
   });
 
   it('should detect letter-digit patterns as ambiguous', () => {
     expect(isAmbiguousName('x1')).toBe(true);
     expect(isAmbiguousName('n3')).toBe(true);
     expect(isAmbiguousName('a10')).toBe(true);
+    // s3 is a common AWS service name
+    expect(isAmbiguousName('s3')).toBe(false);
   });
 
   it('should accept descriptive names', () => {

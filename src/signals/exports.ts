@@ -68,7 +68,12 @@ export function detectExportSignals(
 
     // Undocumented Exports
     if (options.checkUndocumentedExports !== false) {
-      if (!exp.documentation || !exp.documentation.content) {
+      const isTypeOrInterface = exp.type === 'type' || exp.type === 'interface';
+
+      if (
+        !isTypeOrInterface &&
+        (!exp.documentation || !exp.documentation.content)
+      ) {
         signals.undocumentedExports++;
         issues.push({
           type: IssueType.AiSignalClarity,
