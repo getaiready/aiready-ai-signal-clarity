@@ -77,6 +77,14 @@ export function detectStructuralSignals(
   let callbackDepth = 0;
   let maxCallbackDepth = 0;
 
+  const isConfigFile =
+    filePath.endsWith('.config.ts') ||
+    filePath.endsWith('.config.js') ||
+    filePath.endsWith('.config.mts') ||
+    filePath.endsWith('.config.mjs') ||
+    filePath.includes('sst.config.ts') ||
+    filePath.endsWith('playwright.config.ts');
+
   const visitNode = (node: any, parent?: any, keyInParent?: string) => {
     if (!node) return;
 
@@ -226,6 +234,28 @@ export function detectStructuralSignals(
           parent.callee?.type === 'Identifier' &&
           parent.callee?.name === 'require';
 
+        // Check if this is a value in a JSX style object (Issue: Context-Blind CSS analysis)
+        let isStyleValue = false;
+        if (parent?.type === 'Property' && keyInParent === 'value') {
+          let p = parent.parent; // ObjectExpression
+          while (p && p.type === 'ObjectExpression') {
+            const grandParent = p.parent;
+            if (grandParent?.type === 'JSXExpressionContainer') {
+              const attr = grandParent.parent;
+              if (
+                attr?.type === 'JSXAttribute' &&
+                attr.name?.type === 'JSXIdentifier' &&
+                attr.name.name === 'style'
+              ) {
+                isStyleValue = true;
+                break;
+              }
+            }
+            // Could be nested: style={{ base: { display: 'flex' } }}
+            p = grandParent?.type === 'Property' ? grandParent.parent : null;
+          }
+        }
+
         const redundantType =
           typeof node.value === 'string'
             ? isRedundantTypeConstant(
@@ -256,7 +286,9 @@ export function detectStructuralSignals(
           isObjectKey ||
           isJSXAttribute ||
           isImportSource ||
-          isRequireArg
+          isRequireArg ||
+          isStyleValue ||
+          (isConfigFile && typeof node.value === 'string')
         ) {
           // Skip magic literal check for these contextually safe literals
         } else if (
@@ -342,8 +374,11 @@ export function detectStructuralSignals(
           const isLambdaBool = node.arguments.some((arg: any) =>
             isLambdaBooleanParam(arg, node.parent)
           );
+          const isUseStateCall =
+            node.callee?.type === 'Identifier' &&
+            node.callee?.name === 'useState';
 
-          if (!isLambdaContext && !isLambdaBool) {
+          if (!isLambdaContext && !isLambdaBool && !isUseStateCall) {
             signals.booleanTraps++;
             issues.push({
               type: IssueType.BooleanTrap,
@@ -387,17 +422,27 @@ export function detectStructuralSignals(
         node.id.type === 'Identifier'
       ) {
         if (isAmbiguousName(node.id.name)) {
-          signals.ambiguousNames++;
-          issues.push({
-            type: IssueType.AmbiguousApi,
-            category: CATEGORY_AMBIGUOUS_NAME,
-            severity: Severity.Info,
-            message: `Ambiguous variable name "${node.id.name}" — AI intent is unclear.`,
-            location: {
-              file: filePath,
-              line: node.loc?.start.line || 1,
-            },
-          });
+          // Relax for 'data' when initialized from obvious sources (Issue: Universal pattern context)
+          const isDataFromJson =
+            node.id.name === 'data' &&
+            node.init &&
+            ctx.code
+              .slice(node.init.range?.[0] || 0, node.init.range?.[1] || 0)
+              .includes('.json()');
+
+          if (!isDataFromJson) {
+            signals.ambiguousNames++;
+            issues.push({
+              type: IssueType.AmbiguousApi,
+              category: CATEGORY_AMBIGUOUS_NAME,
+              severity: Severity.Info,
+              message: `Ambiguous variable name "${node.id.name}" — AI intent is unclear.`,
+              location: {
+                file: filePath,
+                line: node.loc?.start.line || 1,
+              },
+            });
+          }
         }
       }
     }

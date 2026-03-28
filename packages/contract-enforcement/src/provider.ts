@@ -31,10 +31,23 @@ export const ContractEnforcementProvider = createProvider({
 
   score(output: SpokeOutput, _options: ScanOptions) {
     const rawData = output.metadata?.rawData ?? {};
-    return calculateContractEnforcementScore(
+    const result = calculateContractEnforcementScore(
       rawData,
       rawData.totalLines ?? 1,
       rawData.sourceFiles ?? 1
     );
+    return {
+      toolName: ToolName.ContractEnforcement,
+      score: result.score,
+      rating: result.rating,
+      recommendations: result.recommendations.map((action) => ({
+        action,
+        estimatedImpact: 10,
+        priority: 'medium' as const,
+      })),
+      dimensions: result.dimensions,
+      rawMetrics: rawData,
+      factors: [],
+    };
   },
 });

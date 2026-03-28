@@ -27,7 +27,9 @@ export const ConsistencyProvider = createProvider({
   },
   score(output, options) {
     const results = output.results || [];
-    const allIssues = results.flatMap((r) => r.issues || []);
+    const allIssues = results.flatMap(
+      (r) => r.issues || []
+    ) as ConsistencyIssue[];
     const totalFiles = output.summary?.filesAnalyzed || results.length;
 
     return calculateConsistencyScore(

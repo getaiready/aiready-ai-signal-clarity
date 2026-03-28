@@ -77,7 +77,7 @@ EXAMPLES:
 
     const finalOptions: AiSignalClarityOptions = {
       rootDir: directory,
-      minSeverity: (options.minSeverity as any) || mergedConfig.minSeverity,
+      minSeverity: options.minSeverity || mergedConfig.minSeverity,
       checkMagicLiterals: options.magicLiterals !== false,
       checkBooleanTraps: options.booleanTraps !== false,
       checkAmbiguousNames: options.ambiguousNames !== false,

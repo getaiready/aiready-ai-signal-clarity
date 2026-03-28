@@ -147,6 +147,7 @@ export async function analyzeNamingGeneralized(
           if (!spec || spec === '*' || spec === 'default') continue;
           if (exceptions.has(spec)) continue;
           if (COMMON_ABBREVIATIONS.has(spec.toLowerCase())) continue;
+          if (spec.includes('.')) continue; // Library imports like urllib.parse (Issue: Library Naming Inconsistency)
 
           if (
             !conventions.variablePattern.test(spec) &&
