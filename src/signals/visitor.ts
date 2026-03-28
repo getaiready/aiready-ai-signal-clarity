@@ -118,7 +118,14 @@ export function detectStructuralSignals(
           node.parent?.childForFieldName('name')?.text ||
           '';
 
-        if (!isKey && !isImport && isRedundantTypeConstant(parentName, val)) {
+        const isNamedConstant = /^[A-Z0-9_]{2,}$/.test(parentName);
+
+        if (
+          !isKey &&
+          !isImport &&
+          !isNamedConstant &&
+          isRedundantTypeConstant(parentName, val)
+        ) {
           issues.push({
             type: IssueType.AiSignalClarity,
             category: CATEGORY_REDUNDANT_TYPE_CONSTANT,
@@ -130,7 +137,12 @@ export function detectStructuralSignals(
             },
             suggestion: `Use '${val}' directly in your schema.`,
           });
-        } else if (!isKey && !isImport && isMagicString(val)) {
+        } else if (
+          !isKey &&
+          !isImport &&
+          !isNamedConstant &&
+          isMagicString(val)
+        ) {
           // Check if this is a domain-specific term
           const isDomain =
             domainVocabulary && domainVocabulary.has(val.toLowerCase());

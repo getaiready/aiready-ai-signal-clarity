@@ -20,11 +20,11 @@ export const AiSignalClarityProvider = createProvider({
     return analyzeAiSignalClarity(options as AiSignalClarityOptions);
   },
   getResults(report): AnalysisResult[] {
-    return report.results.map((r) => ({
-      fileName: r.fileName,
-      issues: r.issues as any[],
+    return report.issues.map((issue) => ({
+      fileName: issue.location.file,
+      issues: [issue],
       metrics: {
-        aiSignalClarityScore: 100,
+        aiSignalClarityScore: report.summary.score,
       },
     }));
   },
@@ -37,9 +37,9 @@ export const AiSignalClarityProvider = createProvider({
   score(output) {
     const report = {
       summary: output.summary,
-      aggregateSignals: (output.metadata as any).aggregateSignals,
+      aggregateSignals: output.metadata?.aggregateSignals ?? {},
       results: [],
-    } as unknown as AiSignalClarityReport;
+    } as AiSignalClarityReport;
     return calculateAiSignalClarityScore(report);
   },
 });
