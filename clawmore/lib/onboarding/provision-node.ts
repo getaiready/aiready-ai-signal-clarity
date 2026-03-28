@@ -1,5 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import sodium from 'libsodium-wrappers';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocument } from '@aws-sdk/lib-dynamodb';
 import {
   createManagedAccount,
   waitForAccountCreation,
@@ -15,8 +17,14 @@ import {
   updateProvisioningStatus,
 } from '../db';
 
+const dbClient = new DynamoDBClient({
+  region: process.env.AWS_REGION || 'ap-southeast-2',
+});
+const docClient = DynamoDBDocument.from(dbClient);
+
 export interface ProvisioningOptions {
   userEmail: string;
+  userId: string;
   userName: string;
   githubToken: string;
   repoName: string;
@@ -38,7 +46,13 @@ export class ProvisioningOrchestrator {
    * 3. Inject AWS Secrets and Setup Mutation Tax Preference
    */
   public async provisionNode(options: ProvisioningOptions) {
-    const { userEmail, userName, repoName, coEvolutionOptIn } = options;
+    const {
+      userEmail,
+      userId: _userId,
+      userName,
+      repoName,
+      coEvolutionOptIn,
+    } = options;
     const githubOrg = 'clawmost';
     let accountId: string | null = null;
 
@@ -55,7 +69,11 @@ export class ProvisioningOrchestrator {
         await assignAccountToOwner(accountId, userEmail, repoName);
       } else {
         console.log(`[Provision] Pool empty. Creating new account...`);
-        const requestId = await createManagedAccount(userEmail, userName);
+        const requestId = await createManagedAccount(
+          userEmail,
+          userName,
+          _userId
+        );
         accountId = await waitForAccountCreation(requestId);
       }
 
@@ -83,6 +101,19 @@ export class ProvisioningOrchestrator {
       console.log(`[Provision] Injecting AWS and Evolution secrets...`);
       const credentials = await assumeSubAccountRole(accountId);
 
+      // Find the user ID for this email to inject it
+      const userRes = await docClient.query({
+        TableName: process.env.DYNAMO_TABLE || '',
+        IndexName: 'GSI1',
+        KeyConditionExpression: 'GSI1PK = :pk AND GSI1SK = :sk',
+        ExpressionAttributeValues: {
+          ':pk': 'USER',
+          ':sk': userEmail,
+        },
+      });
+      const resolvedUserId =
+        userRes.Items?.[0]?.PK.replace('USER#', '') || _userId || 'unknown';
+
       await this.injectSecret(
         githubOrg,
         repoName,
@@ -106,6 +137,18 @@ export class ProvisioningOrchestrator {
         repoName,
         'EVOLUTION_OPT_IN',
         coEvolutionOptIn ? 'true' : 'false'
+      );
+      await this.injectSecret(
+        githubOrg,
+        repoName,
+        'HUB_USER_ID',
+        resolvedUserId
+      );
+      await this.injectSecret(
+        githubOrg,
+        repoName,
+        'HUB_EVENT_BUS_NAME',
+        process.env.CLAW_MORE_BUS || 'ClawMoreBus'
       );
 
       // 5. SST Secret Injection (for spoke stack to boot)

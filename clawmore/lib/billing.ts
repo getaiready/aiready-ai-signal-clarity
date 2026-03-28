@@ -22,6 +22,7 @@ function getStripe(): Stripe {
 export interface PlatformSubscriptionOpts {
   customerId?: string;
   userEmail: string;
+  userId: string;
   userName?: string;
   repoName?: string;
   coEvolutionOptIn?: boolean;
@@ -45,6 +46,7 @@ export async function createPlatformSubscriptionSession(
   const {
     customerId,
     userEmail,
+    userId,
     userName = 'Valued Client',
     repoName,
     coEvolutionOptIn = false,
@@ -55,32 +57,42 @@ export async function createPlatformSubscriptionSession(
 
   const tierConfig = TIER_CONFIG[tier] || TIER_CONFIG.pro;
   const priceId = (Resource as any)[tierConfig.priceKey]?.id;
+  const mutationTaxPriceId = (Resource as any).MutationTaxPrice?.id;
 
-  // Auto-generate repo name if not provided
-  const finalRepoName =
-    repoName || `serverlessclaw-instance-${Date.now().toString(36)}`;
+  // Auto-generate repo name if not provided, using a unique suffix
+  const shortId = userId.substring(0, 8).toLowerCase();
+  const finalRepoName = repoName || `claw-${shortId}`;
+
+  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+
+  if (priceId) {
+    lineItems.push({ price: priceId, quantity: 1 });
+  } else {
+    lineItems.push({
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: `ClawMore ${tierConfig.name}`,
+          description:
+            'Managed AWS infrastructure, AI-powered fixes, CI/CD integration, and dashboard.',
+        },
+        unit_amount: tierConfig.amount,
+        recurring: { interval: 'month' },
+      },
+      quantity: 1,
+    });
+  }
+
+  // Always attach the metered tax price if it exists
+  if (mutationTaxPriceId) {
+    lineItems.push({ price: mutationTaxPriceId });
+  }
 
   return await getStripe().checkout.sessions.create({
     customer: customerId,
     customer_email: customerId ? undefined : userEmail,
     payment_method_types: ['card'],
-    line_items: [
-      priceId
-        ? { price: priceId, quantity: 1 }
-        : {
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: `ClawMore ${tierConfig.name}`,
-                description:
-                  'Managed AWS infrastructure, AI-powered fixes, CI/CD integration, and dashboard.',
-              },
-              unit_amount: tierConfig.amount,
-              recurring: { interval: 'month' },
-            },
-            quantity: 1,
-          },
-    ],
+    line_items: lineItems,
     mode: 'subscription',
     payment_intent_data: {
       setup_future_usage: 'off_session', // CRITICAL: Authorizes auto-recharges

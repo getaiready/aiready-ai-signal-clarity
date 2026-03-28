@@ -104,6 +104,22 @@ export default $config({
       { provider: stripeProvider }
     );
 
+    // 4. Mutation Tax ($1.00 per mutation - Metered)
+    const mutationTaxPrice = new (stripe as any).Price(
+      'MutationTaxPrice',
+      {
+        product: platformProduct.id,
+        unitAmount: 100,
+        currency: 'usd',
+        recurring: {
+          interval: 'month',
+          usageType: 'metered',
+          aggregateUsage: 'sum',
+        },
+      },
+      { provider: stripeProvider }
+    );
+
     // 3. Stripe Webhook Endpoint — tells Stripe where to send events
     const webhookEndpoint = new (stripe as any).WebhookEndpoint(
       'StripeWebhook',
@@ -302,6 +318,7 @@ export default $config({
         proPrice,
         teamPrice,
         fuelPackPrice,
+        mutationTaxPrice,
       ],
     });
 

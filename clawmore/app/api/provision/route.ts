@@ -1,7 +1,7 @@
 import { auth } from '../../../auth';
 import { ProvisioningOrchestrator } from '../../../lib/onboarding/provision-node';
 import { NextResponse } from 'next/server';
-import { getUserStatus } from '../../../lib/db';
+import { getUserStatus, getUserMetadata } from '../../../lib/db';
 
 export async function POST(req: Request) {
   const session = (await auth()) as any;
@@ -49,9 +49,14 @@ export async function POST(req: Request) {
 
     const orchestrator = new ProvisioningOrchestrator(githubToken);
 
+    // Fetch the unique ID for this user
+    const userRes = await getUserMetadata(userEmail);
+    const userId = userRes?.PK.replace('USER#', '') || 'unknown';
+
     // 3. Perform the provision loop
     const result = await orchestrator.provisionNode({
       userEmail,
+      userId,
       userName,
       repoName,
       githubToken,

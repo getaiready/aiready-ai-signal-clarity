@@ -5,13 +5,8 @@ import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 export const handler = async (event: any) => {
-  const {
-    userId: _userId,
-    userEmail,
-    coEvolutionOptIn,
-    successUrl,
-    cancelUrl,
-  } = JSON.parse(event.body || '{}');
+  const { userId, userEmail, coEvolutionOptIn, successUrl, cancelUrl } =
+    JSON.parse(event.body || '{}');
 
   if (!userEmail) {
     return {
@@ -33,6 +28,7 @@ export const handler = async (event: any) => {
 
     // 2. Create the $29/mo Subscription Session with off-session authorization
     const session = await createPlatformSubscriptionSession({
+      userId,
       customerId,
       userEmail,
       coEvolutionOptIn: !!coEvolutionOptIn,

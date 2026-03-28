@@ -3,6 +3,7 @@
 import React from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Layers, Zap, Activity, Shield, Terminal } from 'lucide-react';
+import ProvisioningConsole from './ProvisioningConsole';
 
 interface DashboardClientProps {
   user: any;
@@ -22,6 +23,7 @@ interface DashboardClientProps {
     awsAccountId?: string | null;
     repoUrl?: string | null;
     provisioningStatus?: 'provisioning' | 'complete' | 'failed' | null;
+    provisioningError?: string | null;
     planStatus?: string;
   };
 }
@@ -269,46 +271,18 @@ export default function DashboardClient({
       </div>
 
       <div className="w-full space-y-12">
-        {/* Provisioning Banner */}
-        {showProvisioningBanner && (
-          <div className="bg-cyber-blue/5 border border-cyber-blue/20 rounded-2xl p-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="flex items-center gap-4">
-              <div className="w-3 h-3 rounded-full bg-cyber-blue animate-pulse shadow-[0_0_12px_rgba(0,224,255,0.8)]" />
-              <div>
-                <p className="text-sm font-black italic text-white uppercase tracking-tight">
-                  Setting Up Your Managed AWS Account
-                </p>
-                <p className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest mt-1">
-                  This usually takes 2-3 minutes. Your dashboard will update
-                  automatically.
-                </p>
-              </div>
-            </div>
-            <div className="mt-4 w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
-              <div
-                className="bg-cyber-blue h-full animate-pulse transition-all duration-1000"
-                style={{ width: '60%' }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Provisioning Failed Banner */}
-        {showProvisioningFailed && (
-          <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="flex items-center gap-4">
-              <div className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_12px_rgba(239,68,68,0.8)]" />
-              <div>
-                <p className="text-sm font-black italic text-white uppercase tracking-tight">
-                  Provisioning Failed
-                </p>
-                <p className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest mt-1">
-                  There was an issue setting up your account. Please contact
-                  support.
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Provisioning Console (Terminal) */}
+        {(provisionStatus === 'provisioning' ||
+          provisionStatus === 'failed' ||
+          (provisionStatus === 'complete' && pollCount < 5)) && (
+          <ProvisioningConsole
+            status={provisionStatus as any}
+            error={
+              status.provisioningStatus === 'failed'
+                ? (status.provisioningError ?? undefined)
+                : undefined
+            }
+          />
         )}
 
         {activeTab === 'overview' ? (

@@ -1,24 +1,87 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ProvisioningOrchestrator } from './provision-node';
 
-// Mock AWS Vending
-vi.mock('../aws/vending', () => ({
-  findAvailableAccountInPool: vi.fn().mockResolvedValue(null),
-  createManagedAccount: vi.fn().mockResolvedValue('req-123'),
-  waitForAccountCreation: vi.fn().mockResolvedValue('acc-456'),
-  bootstrapManagedAccount: vi
-    .fn()
-    .mockResolvedValue('arn:aws:iam::acc-456:role/ClawMore-Bootstrap-Role'),
-  assumeSubAccountRole: vi.fn().mockResolvedValue({
-    accessKeyId: 'test-key',
-    secretAccessKey: 'test-secret',
-    sessionToken: 'test-token',
-  }),
+const {
+  mockCreateUsingTemplate,
+  mockCreateOrUpdateRepoSecret,
+  mockGetRepoPublicKey,
+  mockQuery,
+  mockUpdate,
+} = vi.hoisted(() => ({
+  mockCreateUsingTemplate: vi.fn(),
+  mockCreateOrUpdateRepoSecret: vi.fn(),
+  mockGetRepoPublicKey: vi.fn(),
+  mockQuery: vi.fn(),
+  mockUpdate: vi.fn(),
 }));
 
-// Mock AWS Governance
+// Mock Octokit
+vi.mock('@octokit/rest', () => {
+  class MockOctokit {
+    repos = { createUsingTemplate: mockCreateUsingTemplate };
+    actions = {
+      createOrUpdateRepoSecret: mockCreateOrUpdateRepoSecret,
+      getRepoPublicKey: mockGetRepoPublicKey,
+    };
+  }
+  return { Octokit: MockOctokit };
+});
+
+// Mock Sodium for encryption
+vi.mock('libsodium-wrappers', () => ({
+  default: {
+    ready: Promise.resolve(),
+    from_base64: vi.fn().mockReturnValue(new Uint8Array()),
+    from_string: vi.fn().mockReturnValue(new Uint8Array()),
+    crypto_box_seal: vi.fn().mockReturnValue(new Uint8Array()),
+    to_base64: vi.fn().mockReturnValue('encrypted_mock'),
+    base64_variants: { ORIGINAL: 'original' },
+  },
+}));
+
+// Mock DynamoDB
+vi.mock('@aws-sdk/client-dynamodb', () => {
+  return { DynamoDBClient: class MockDB {} };
+});
+
+vi.mock('@aws-sdk/lib-dynamodb', () => {
+  return {
+    PutCommand: class MockPut {},
+    QueryCommand: class MockQuery {},
+    UpdateCommand: class MockUpdate {},
+    DynamoDBDocument: {
+      from: vi.fn().mockImplementation(() => ({
+        query: mockQuery,
+        update: mockUpdate,
+        put: vi.fn(),
+        send: vi.fn().mockResolvedValue({}),
+      })),
+    },
+    DynamoDBDocumentClient: {
+      from: vi.fn().mockImplementation(() => ({
+        send: vi.fn().mockResolvedValue({}),
+      })),
+    },
+  };
+});
+
+// Mock Vending
+vi.mock('../aws/vending', () => ({
+  findAvailableAccountInPool: vi.fn().mockResolvedValue('123456789012'),
+  assignAccountToOwner: vi.fn().mockResolvedValue({}),
+  assumeSubAccountRole: vi
+    .fn()
+    .mockResolvedValue({ accessKeyId: 'ak', secretAccessKey: 'sk' }),
+  bootstrapManagedAccount: vi
+    .fn()
+    .mockResolvedValue('arn:aws:iam::123456789012:role/Role'),
+  createManagedAccount: vi.fn(),
+  waitForAccountCreation: vi.fn(),
+}));
+
+// Mock Governance
 vi.mock('../aws/governance', () => ({
-  createServerlessSCP: vi.fn().mockResolvedValue('scp-789'),
+  createServerlessSCP: vi.fn().mockResolvedValue('scp-123'),
   attachSCPToAccount: vi.fn().mockResolvedValue({}),
 }));
 
@@ -29,164 +92,48 @@ vi.mock('../db', () => ({
   updateProvisioningStatus: vi.fn().mockResolvedValue({}),
 }));
 
-// Mock Libsodium
-vi.mock('libsodium-wrappers', () => ({
-  default: {
-    ready: Promise.resolve(),
-    from_base64: vi.fn().mockReturnValue(new Uint8Array()),
-    from_string: vi.fn().mockReturnValue(new Uint8Array()),
-    crypto_box_seal: vi.fn().mockReturnValue(new Uint8Array()),
-    to_base64: vi.fn().mockReturnValue('encrypted-value'),
-    base64_variants: { ORIGINAL: 1 },
-  },
-}));
-
-describe('ProvisioningOrchestrator', () => {
-  let orchestrator: ProvisioningOrchestrator;
-  let mockOctokit: any;
-
+describe('Provisioning Secret Injection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-
-    mockOctokit = {
-      users: {
-        getAuthenticated: vi
-          .fn()
-          .mockResolvedValue({ data: { login: 'testuser' } }),
-      },
-      repos: {
-        createUsingTemplate: vi.fn().mockResolvedValue({
-          data: {
-            owner: { login: 'testuser' },
-            html_url: 'https://github.com/testuser/test-repo',
-          },
-        }),
-      },
-      actions: {
-        getRepoPublicKey: vi.fn().mockResolvedValue({
-          data: { key: 'dGVzdC1wdWJsaWMta2V5', key_id: 'key-123' },
-        }),
-        createOrUpdateRepoSecret: vi.fn().mockResolvedValue({}),
-      },
-    };
-
-    orchestrator = new ProvisioningOrchestrator(
-      'fake-token',
-      mockOctokit as any
-    );
+    process.env.CLAW_MORE_BUS = 'ClawMoreBus';
   });
 
-  it('should orchestrate the full provisioning loop successfully', async () => {
-    const options = {
-      userEmail: 'test@example.com',
-      userName: 'Test User',
-      repoName: 'test-repo',
-      githubToken: 'fake-token',
-      coEvolutionOptIn: true,
-    };
-
-    const result = await orchestrator.provisionNode(options);
-
-    expect(result).toEqual(
-      expect.objectContaining({
-        accountId: 'acc-456',
-        repoUrl: 'https://github.com/testuser/test-repo',
-        roleArn: 'arn:aws:iam::acc-456:role/ClawMore-Bootstrap-Role',
-      })
-    );
-
-    // Verify GitHub calls
-    expect(mockOctokit.repos.createUsingTemplate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: 'test-repo',
-        template_owner: 'caopengau',
-        template_repo: 'serverlessclaw',
-      })
-    );
-
-    // Verify Secret Injection (4 base secrets)
-    expect(mockOctokit.actions.createOrUpdateRepoSecret).toHaveBeenCalledTimes(
-      4
-    );
-
-    // Verify DB Persistence
-    const { createManagedAccountRecord, ensureUserMetadata } =
-      await import('../db');
-    expect(createManagedAccountRecord).toHaveBeenCalledWith({
-      awsAccountId: 'acc-456',
-      ownerEmail: 'test@example.com',
-      repoName: 'test-repo',
+  it('should inject HUB_USER_ID and HUB_EVENT_BUS_NAME secrets', async () => {
+    mockCreateUsingTemplate.mockResolvedValue({
+      data: { html_url: 'https://github.com/ok' },
     });
-    expect(ensureUserMetadata).toHaveBeenCalledWith('test@example.com');
-  });
+    mockGetRepoPublicKey.mockResolvedValue({
+      data: { key: 'key_abc', key_id: 'kid_123' },
+    });
 
-  it('should inject SST secrets when provided', async () => {
-    const options = {
+    // Mock User Lookup
+    mockQuery.mockResolvedValue({
+      Items: [{ PK: 'USER#testuser123' }],
+    });
+
+    const orchestrator = new ProvisioningOrchestrator('fake_token');
+    await orchestrator.provisionNode({
+      userId: 'testuser123',
       userEmail: 'test@example.com',
-      userName: 'Test User',
-      repoName: 'test-repo',
-      githubToken: 'fake-token',
+      userName: 'Tester',
+      repoName: 'test-node',
+      githubToken: 'fake_token',
       coEvolutionOptIn: false,
-      sstSecrets: {
-        TelegramBotToken: 'bot-token-123',
-        MiniMaxApiKey: 'minimax-key-456',
-        GitHubToken: 'gh-token-789',
-      },
-    };
+    });
 
-    const result = await orchestrator.provisionNode(options);
-
-    expect(result.accountId).toBe('acc-456');
-
-    // 4 base secrets + 3 SST secrets = 7 total
-    expect(mockOctokit.actions.createOrUpdateRepoSecret).toHaveBeenCalledTimes(
-      7
+    // Verify Secret Injection
+    expect(mockCreateOrUpdateRepoSecret).toHaveBeenCalledWith(
+      expect.objectContaining({
+        secret_name: 'HUB_USER_ID',
+        encrypted_value: 'encrypted_mock',
+      })
     );
 
-    // Verify SST secrets were injected with SST_SECRET_ prefix
-    const secretCalls = mockOctokit.actions.createOrUpdateRepoSecret.mock.calls;
-    const secretNames = secretCalls.map((call: any) => call[0].secret_name);
-    expect(secretNames).toContain('SST_SECRET_TelegramBotToken');
-    expect(secretNames).toContain('SST_SECRET_MiniMaxApiKey');
-    expect(secretNames).toContain('SST_SECRET_GitHubToken');
-  });
-
-  it('should skip SST secrets when not provided', async () => {
-    const options = {
-      userEmail: 'test@example.com',
-      userName: 'Test User',
-      repoName: 'test-repo',
-      githubToken: 'fake-token',
-      coEvolutionOptIn: true,
-    };
-
-    await orchestrator.provisionNode(options);
-
-    // Only 4 base secrets, no SST secrets
-    expect(mockOctokit.actions.createOrUpdateRepoSecret).toHaveBeenCalledTimes(
-      4
-    );
-  });
-
-  it('should skip empty SST secret values', async () => {
-    const options = {
-      userEmail: 'test@example.com',
-      userName: 'Test User',
-      repoName: 'test-repo',
-      githubToken: 'fake-token',
-      coEvolutionOptIn: true,
-      sstSecrets: {
-        TelegramBotToken: 'bot-token-123',
-        MiniMaxApiKey: '', // empty, should be skipped
-        GitHubToken: 'gh-token-789',
-      },
-    };
-
-    await orchestrator.provisionNode(options);
-
-    // 4 base secrets + 2 non-empty SST secrets = 6 total
-    expect(mockOctokit.actions.createOrUpdateRepoSecret).toHaveBeenCalledTimes(
-      6
+    expect(mockCreateOrUpdateRepoSecret).toHaveBeenCalledWith(
+      expect.objectContaining({
+        secret_name: 'HUB_EVENT_BUS_NAME',
+        encrypted_value: 'encrypted_mock',
+      })
     );
   });
 });

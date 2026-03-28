@@ -26,24 +26,41 @@ const stsClient = new STSClient({});
  *
  * @param userEmail - The owner's email address (will be sanitized for uniqueness).
  * @param userName - Friendly name for the account owner, used in the AccountName.
+ * @param userId - Unique ID for the user to include in the account name.
  * @returns The CreateAccount request id which can be polled for completion.
  * @throws When the Organizations API fails to initiate account creation.
  */
 export async function createManagedAccount(
   userEmail: string,
-  userName: string
+  userName: string,
+  userId?: string,
+  isWarmPool: boolean = false
 ): Promise<string> {
-  const sanitizedEmail = userEmail.replace('@', '+clawmore@'); // E.g. caopengau+clawmore@gmail.com
+  const sanitizedEmail = isWarmPool
+    ? userEmail.replace('@', `+clawpool-${Date.now().toString(36)}@`)
+    : userEmail.replace('@', '+clawmore@');
+
+  const shortId = userId ? userId.substring(0, 8).toUpperCase() : 'WARM';
+  const accountName = isWarmPool
+    ? `Claw-WarmPool-${Date.now().toString(36)}`
+    : `Claw-${shortId} (${userName})`;
+
+  const tags = [
+    { Key: 'Project', Value: 'ClawMore' },
+    { Key: 'Type', Value: 'ManagedNode' },
+    { Key: 'Status', Value: isWarmPool ? 'Available' : 'Active' },
+  ];
+
+  if (!isWarmPool) {
+    tags.push({ Key: 'Owner', Value: userEmail });
+    if (userId) tags.push({ Key: 'UserId', Value: userId });
+  }
 
   const command = new CreateAccountCommand({
     Email: sanitizedEmail,
-    AccountName: `ClawMore Managed - ${userName}`,
+    AccountName: accountName,
     RoleName: 'OrganizationAccountAccessRole',
-    Tags: [
-      { Key: 'Project', Value: 'ClawMore' },
-      { Key: 'Type', Value: 'ManagedNode' },
-      { Key: 'Owner', Value: userEmail },
-    ],
+    Tags: tags,
   });
 
   const response = await orgClient.send(command);

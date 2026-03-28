@@ -20,13 +20,15 @@ export async function POST(req: NextRequest) {
     const host =
       process.env.NEXT_PUBLIC_APP_URL || `https://${req.headers.get('host')}`;
 
-    // Lookup existing Stripe customer to avoid duplicates
+    // Lookup existing Stripe customer and userId to avoid duplicates
     const metadata = await getUserMetadata(session.user.email);
     const existingCustomerId = metadata?.stripeCustomerId;
+    const userId = metadata?.PK.replace('USER#', '') || 'unknown';
 
     const checkoutSession = await createPlatformSubscriptionSession({
       customerId: existingCustomerId,
       userEmail: session.user.email,
+      userId,
       tier,
       successUrl: `${host}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${host}/dashboard`,

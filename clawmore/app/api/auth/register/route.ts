@@ -16,6 +16,7 @@ const TableName = process.env.DYNAMO_TABLE || '';
 const registerSchema = z.object({
   email: z.string().email('Valid email is required'),
   name: z.string().min(1, 'Name is required').max(100),
+  plan: z.enum(['free', 'managed']).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { email, name } = parsed.data;
+    const { email, name, plan = 'free' } = parsed.data;
     const normalizedEmail = email.toLowerCase().trim();
 
     // Check if user already exists
@@ -54,23 +55,27 @@ export async function POST(req: NextRequest) {
     if (existing.Items && existing.Items.length > 0) {
       const existingUser = existing.Items[0];
       const existingId = existingUser.PK.replace('USER#', '');
+
+      // Update record with plan choice if it's a pending user
+      await docClient.update({
+        TableName,
+        Key: { PK: `USER#${existingId}`, SK: `USER#${existingId}` },
+        UpdateExpression: 'SET #n = :name, plan = :plan, updatedAt = :now',
+        ExpressionAttributeNames: { '#n': 'name' },
+        ExpressionAttributeValues: {
+          ':name': name,
+          ':plan': plan.toUpperCase(),
+          ':now': new Date().toISOString(),
+        },
+      });
+
       if (existingUser.status === 'APPROVED') {
         return NextResponse.json(
           { error: 'Account already exists. Please sign in.' },
           { status: 409 }
         );
       }
-      // User exists but is pending - update name if provided and return success
-      await docClient.update({
-        TableName,
-        Key: { PK: `USER#${existingId}`, SK: `USER#${existingId}` },
-        UpdateExpression: 'SET #n = :name, updatedAt = :now',
-        ExpressionAttributeNames: { '#n': 'name' },
-        ExpressionAttributeValues: {
-          ':name': name,
-          ':now': new Date().toISOString(),
-        },
-      });
+
       return NextResponse.json({
         success: true,
         message: 'Account found. Please sign in to continue.',
@@ -98,7 +103,7 @@ export async function POST(req: NextRequest) {
         email: normalizedEmail,
         name,
         status: 'PENDING',
-        plan: 'FREE',
+        plan: plan.toUpperCase(),
         type: 'USER',
         createdAt: now,
         updatedAt: now,

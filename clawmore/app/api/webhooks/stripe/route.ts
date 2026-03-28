@@ -77,15 +77,28 @@ export async function POST(req: NextRequest) {
             if (userItem) {
               const userId = userItem.PK.replace('USER#', '');
 
+              // Fetch the subscription to get individual item IDs (for metered usage)
+              const subscription = await stripe.subscriptions.retrieve(
+                session.subscription as string
+              );
+
+              // Find the metered price item for Mutation Tax
+              const mutationTaxItem = subscription.items.data.find(
+                (item) =>
+                  item.price.unit_amount === 100 &&
+                  item.price.recurring?.usage_type === 'metered'
+              );
+
               // Update the user's metadata: set plan, customerId, subscriptionId and initial fuel pool
               await docClient.update({
                 TableName,
                 Key: { PK: `USER#${userId}`, SK: 'METADATA' },
                 UpdateExpression:
-                  'SET stripeCustomerId = :customerId, stripeSubscriptionId = :subscriptionId, plan = :plan, aiTokenBalanceCents = if_not_exists(aiTokenBalanceCents, :zero) + :initialFuel, coEvolutionOptIn = :coEvo',
+                  'SET stripeCustomerId = :customerId, stripeSubscriptionId = :subscriptionId, stripeMutationSubscriptionItemId = :mutationItemId, plan = :plan, aiTokenBalanceCents = if_not_exists(aiTokenBalanceCents, :zero) + :initialFuel, coEvolutionOptIn = :coEvo',
                 ExpressionAttributeValues: {
                   ':customerId': session.customer as string,
                   ':subscriptionId': session.subscription as string,
+                  ':mutationItemId': mutationTaxItem?.id || null,
                   ':plan': 'MANAGED',
                   ':initialFuel': 1000, // $10 initial fuel
                   ':zero': 0,
@@ -132,6 +145,7 @@ export async function POST(req: NextRequest) {
                 orchestrator
                   .provisionNode({
                     userEmail,
+                    userId,
                     userName,
                     repoName,
                     githubToken,
