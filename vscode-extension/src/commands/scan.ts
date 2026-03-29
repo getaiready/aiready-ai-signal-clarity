@@ -128,9 +128,24 @@ export function createScanCommands(
     updateStatusBar('$(sync~spin) Scanning...', false);
 
     try {
-      // Build CLI command - the CLI saves JSON to .aiready/ directory
-      const toolsArg = tools.join(',');
-      let cmd = `npx @aiready/cli scan --output json --tools ${toolsArg} --score`;
+      let cmd = 'npx @aiready/cli scan --output json --score';
+
+      // Only add --tools if explicitly overridden in VS Code settings
+      if (mergedConfig.overrides?.tools && tools.length > 0) {
+        cmd += ` --tools ${tools.join(',')}`;
+      }
+
+      // Only add --threshold if explicitly overridden in VS Code settings
+      if (mergedConfig.overrides?.threshold) {
+        cmd += ` --threshold ${threshold}`;
+      }
+
+      // Always add --fail-on none for the extension, unless the user explicitly wants something else
+      if (mergedConfig.overrides?.failOn) {
+        cmd += ` --fail-on ${mergedConfig.failOn}`;
+      } else {
+        cmd += ' --fail-on none';
+      }
 
       // Add path argument
       cmd += ` "${path}"`;

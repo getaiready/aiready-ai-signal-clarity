@@ -172,7 +172,6 @@ export default $config({
 
     // SNS Topic for notifications
     const topic = new sst.aws.SnsTopic('LeadNotifications');
-    const notificationEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
     // Note: SNS subscription requires raw AWS provider which is not configured
     // For now, notifications will be handled through the application
 

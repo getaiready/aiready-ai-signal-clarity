@@ -197,15 +197,70 @@ export async function analyzeTestability(
     });
   }
 
-  if (indexResult.dimensions.purityScore < 50) {
+  if (indexResult.dimensions.purityScore < 70) {
+    const worstPurityFiles = (indexResult.fileMetrics || [])
+      .filter((m) => !m.isEntryPoint && m.purityScore < 50)
+      .sort((a, b) => a.purityScore - b.purityScore)
+      .slice(0, 5);
+
+    if (worstPurityFiles.length > 0) {
+      worstPurityFiles.forEach((file) => {
+        issues.push({
+          type: IssueType.LowTestability,
+          dimension: 'purity',
+          severity: Severity.Major,
+          message: `File has only ${file.purityScore}% pure functions — logic is hard for AI to verify safely.`,
+          location: { file: file.filePath, line: 1 },
+          suggestion:
+            'Extract side-effectful logic into pure, testable functions.',
+        });
+      });
+    } else {
+      issues.push({
+        type: IssueType.LowTestability,
+        dimension: 'purity',
+        severity: Severity.Major,
+        message: `Only ${indexResult.dimensions.purityScore}% of project functions are pure — reduces AI verification safety.`,
+        location: { file: options.rootDir, line: 0 },
+        suggestion:
+          'Promote pure function patterns to improve codebase testability.',
+      });
+    }
+  }
+
+  if (indexResult.dimensions.dependencyInjectionScore < 60) {
     issues.push({
       type: IssueType.LowTestability,
-      dimension: 'purity',
+      dimension: 'dependency-injection',
       severity: Severity.Major,
-      message: `Only ${indexResult.dimensions.purityScore}% of functions appear pure — side-effectful code is harder for AI to verify safely.`,
+      message: `Only ${indexResult.dimensions.dependencyInjectionScore}% of classes use dependency injection — hard to mock for AI verification.`,
       location: { file: options.rootDir, line: 0 },
       suggestion:
-        'Refactor complex side-effectful logic into pure functions where possible.',
+        'Use constructor-based dependency injection to make components mockable.',
+    });
+  }
+
+  if (aggregated.bloatedInterfaces > 0) {
+    issues.push({
+      type: IssueType.LowTestability,
+      dimension: 'interface-focus',
+      severity: Severity.Minor,
+      message: `Found ${aggregated.bloatedInterfaces} bloated interfaces/classes — large interfaces are harder for AI to implement correctly.`,
+      location: { file: options.rootDir, line: 0 },
+      suggestion:
+        'Split large interfaces into smaller, focused ones (Interface Segregation Principle).',
+    });
+  }
+
+  if (indexResult.dimensions.observabilityScore < 60) {
+    issues.push({
+      type: IssueType.LowTestability,
+      dimension: 'observability',
+      severity: Severity.Major,
+      message: `High rate of external state mutations detected (${indexResult.dimensions.observabilityScore}/100 observability) — hard for AI to reason about state changes.`,
+      location: { file: options.rootDir, line: 0 },
+      suggestion:
+        'Prefer immutable data patterns and return values instead of mutating external state.',
     });
   }
 

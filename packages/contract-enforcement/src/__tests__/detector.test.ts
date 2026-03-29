@@ -72,11 +72,23 @@ describe('detectDefensivePatterns', () => {
       try {
         doSomething();
       } catch (e) {
-        console.error(e);
+        console.log(e);
       }
     `;
     const result = detectDefensivePatterns(filePath, code);
     expect(result.counts['swallowed-error']).toBe(1);
+  });
+
+  it('does not flag console.error as swallowed', () => {
+    const code = `
+      try {
+        doSomething();
+      } catch (e) {
+        console.error(e);
+      }
+    `;
+    const result = detectDefensivePatterns(filePath, code);
+    expect(result.counts['swallowed-error']).toBe(0);
   });
 
   it('does not flag catch blocks with real handling', () => {

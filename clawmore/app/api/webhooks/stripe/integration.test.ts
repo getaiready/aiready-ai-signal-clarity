@@ -296,7 +296,7 @@ describe('Webhook → Provisioning → DB Integration', () => {
     // Verify error status was set in DB
     // Note: This happens asynchronously, so we need to check the mock calls
     const updateCalls = mockUpdate.mock.calls;
-    const errorUpdateCall = updateCalls.find(
+    updateCalls.find(
       (call) => call[0]?.ExpressionAttributeValues?.[':status'] === 'FAILED'
     );
 

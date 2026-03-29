@@ -141,13 +141,17 @@ function isSwallowedCatch(
       stmt.expression?.type === 'CallExpression'
     ) {
       const callee = stmt.expression.callee;
-      // console.log/warn/error is still considered "swallowed" but might be acceptable
+      // console.error and console.warn are considered "handling" or at least "reporting"
       if (
         callee?.type === 'MemberExpression' &&
         callee.object?.type === 'Identifier' &&
         callee.object.name === 'console'
-      )
-        return true;
+      ) {
+        const method =
+          callee.property.type === 'Identifier' ? callee.property.name : '';
+        if (method === 'error' || method === 'warn') return false;
+        return true; // console.log/info/debug etc. are still considered "swallowed"
+      }
 
       // If it's a UI component and looks like telemetry, it's a false positive
       if (isUiComponent) {

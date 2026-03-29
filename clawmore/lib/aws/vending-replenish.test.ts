@@ -398,7 +398,6 @@ describe('Warm Pool Replenishment Logic', () => {
         return {};
       });
 
-      const { waitForAccountCreation } = await import('./vending');
       // Skip this test due to 5-second delay in implementation
       // The timeout logic is tested by the implementation itself
       expect(true).toBe(true);

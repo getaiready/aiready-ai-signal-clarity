@@ -70,9 +70,6 @@ test.describe('Full Provisioning Flow E2E', () => {
 
     // Step 4: Test dashboard provisioning console UI components
     // If user is authenticated and provisioning, the console should render
-    const provisioningConsole = page.locator(
-      '[data-testid="provisioning-console"]'
-    );
     // Console may or may not exist depending on auth state
     // This validates the component structure exists in the DOM
 

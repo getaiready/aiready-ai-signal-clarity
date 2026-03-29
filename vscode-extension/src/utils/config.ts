@@ -33,6 +33,11 @@ export interface AIReadyConfig {
   autoScan: boolean;
   showStatusBar: boolean;
   excludePatterns: string[];
+  overrides?: {
+    threshold?: boolean;
+    tools?: boolean;
+    failOn?: boolean;
+  };
 }
 
 /**
@@ -40,6 +45,10 @@ export interface AIReadyConfig {
  */
 export function getMergedConfig(): AIReadyConfig {
   const config = vscode.workspace.getConfiguration('aiready');
+
+  const thresholdEntry = config.inspect<number>('threshold');
+  const toolsEntry = config.inspect<string[]>('tools');
+  const failOnEntry = config.inspect<string>('failOn');
 
   return {
     threshold: config.get<number>('threshold', SMART_DEFAULTS.threshold),
@@ -53,5 +62,16 @@ export function getMergedConfig(): AIReadyConfig {
     excludePatterns: config.get<string[]>('excludePatterns', [
       ...SMART_DEFAULTS.excludePatterns,
     ]),
+    overrides: {
+      threshold:
+        thresholdEntry?.globalValue !== undefined ||
+        thresholdEntry?.workspaceValue !== undefined,
+      tools:
+        toolsEntry?.globalValue !== undefined ||
+        toolsEntry?.workspaceValue !== undefined,
+      failOn:
+        failOnEntry?.globalValue !== undefined ||
+        failOnEntry?.workspaceValue !== undefined,
+    },
   };
 }

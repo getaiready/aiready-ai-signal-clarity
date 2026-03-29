@@ -49,15 +49,15 @@ export function calculateContextScore(
   costConfig?: Partial<CostConfig>
 ): ToolScoringOutput {
   const {
-    avgContextBudget,
-    maxContextBudget,
-    avgImportDepth,
-    maxImportDepth,
-    avgFragmentation,
-    criticalIssues,
-    majorIssues,
-    totalFiles,
-  } = summary;
+    avgContextBudget = 0,
+    maxContextBudget = 0,
+    avgImportDepth = 0,
+    maxImportDepth = 0,
+    avgFragmentation = 0.5, // neutral
+    criticalIssues = 0,
+    majorIssues = 0,
+    totalFiles = 0,
+  } = summary || {};
 
   // More reasonable thresholds for modern codebases
   const budgetScore =
