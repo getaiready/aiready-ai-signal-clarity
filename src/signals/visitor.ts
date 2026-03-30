@@ -101,8 +101,8 @@ export function detectStructuralSignals(
 
     const isTreeSitter = 'namedChildren' in node;
 
-    // --- Magic Literals ---
-    if (options.checkMagicLiterals !== false) {
+    // Skip magic literal checks for config files - they intentionally use strings
+    if (!isConfigFile && options.checkMagicLiterals !== false) {
       // Tree-sitter (Python, Java, etc.)
       if (isTreeSitter) {
         const tsNode = node as Parser.Node;
