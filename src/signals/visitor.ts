@@ -32,6 +32,42 @@ function isLambdaHandlerFile(filePath: string): boolean {
 }
 
 /**
+ * Detect if a file is likely a visualization/chart component (D3, Recharts, etc.)
+ * These files legitimately use many numeric parameters for positioning, sizing, etc.
+ */
+function isVisualizationFile(filePath: string, code: string): boolean {
+  const normalizedPath = filePath.toLowerCase();
+  const normalizedCode = code.toLowerCase();
+
+  // Check file path patterns
+  if (
+    normalizedPath.includes('graph') ||
+    normalizedPath.includes('chart') ||
+    normalizedPath.includes('visualiz') ||
+    normalizedPath.includes('force-directed') ||
+    normalizedPath.includes('simulation')
+  ) {
+    return true;
+  }
+
+  // Check for D3 imports/usage patterns
+  if (
+    normalizedCode.includes('d3.force') ||
+    normalizedCode.includes('d3.zoom') ||
+    normalizedCode.includes('d3.drag') ||
+    normalizedCode.includes('forcesimulation') ||
+    normalizedCode.includes('forcelink') ||
+    normalizedCode.includes('forcemanybody') ||
+    normalizedCode.includes('forcecenter') ||
+    normalizedCode.includes('forcecollide')
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Check if a boolean value is a common Lambda/Serverless parameter.
  */
 function isLambdaBooleanParam(
@@ -92,6 +128,10 @@ export function detectStructuralSignals(
     filePath.includes('sst.config.ts') ||
     filePath.endsWith('playwright.config.ts');
 
+  // Check if this is a visualization file (D3, charts, etc.)
+  // These files legitimately use many numeric parameters
+  const isVisualization = isVisualizationFile(filePath, ctx.code);
+
   const visitNode = (
     node: TSESTree.Node | Parser.Node,
     parent?: TSESTree.Node | Parser.Node,
@@ -101,8 +141,13 @@ export function detectStructuralSignals(
 
     const isTreeSitter = 'namedChildren' in node;
 
-    // Skip magic literal checks for config files - they intentionally use strings
-    if (!isConfigFile && options.checkMagicLiterals !== false) {
+    // Skip magic literal checks for config files and visualization files
+    // Config files intentionally use strings, visualization files use many numeric params
+    if (
+      !isConfigFile &&
+      !isVisualization &&
+      options.checkMagicLiterals !== false
+    ) {
       // Tree-sitter (Python, Java, etc.)
       if (isTreeSitter) {
         const tsNode = node as Parser.Node;
