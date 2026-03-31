@@ -18,6 +18,11 @@ import type * as Parser from 'web-tree-sitter';
 
 /**
  * Detect if a file is likely a Lambda handler or serverless function.
+ * Common naming patterns are used to identify entry points that often have
+ * specific parameter structures (like event/context).
+ *
+ * @param filePath - Path to the file being analyzed
+ * @returns true if the file is likely a Lambda handler
  */
 function isLambdaHandlerFile(filePath: string): boolean {
   const normalizedPath = filePath.toLowerCase();
@@ -32,14 +37,18 @@ function isLambdaHandlerFile(filePath: string): boolean {
 }
 
 /**
- * Detect if a file is likely a visualization/chart component (D3, Recharts, etc.)
- * These files legitimately use many numeric parameters for positioning, sizing, etc.
+ * Detect if a file is likely a visualization or chart component (D3, Recharts, etc.).
+ * These files legitimately use many numeric parameters for positioning, sizing, and
+ * geometry calculations, which shouldn't be flagged as magic numbers.
+ *
+ * @param filePath - Path to the file
+ * @param code - Raw source code content
+ * @returns true if the file is likely a visualization component
  */
 function isVisualizationFile(filePath: string, code: string): boolean {
   const normalizedPath = filePath.toLowerCase();
   const normalizedCode = code.toLowerCase();
 
-  // Check file path patterns
   if (
     normalizedPath.includes('graph') ||
     normalizedPath.includes('chart') ||
@@ -50,7 +59,6 @@ function isVisualizationFile(filePath: string, code: string): boolean {
     return true;
   }
 
-  // Check for D3 imports/usage patterns
   if (
     normalizedCode.includes('d3.force') ||
     normalizedCode.includes('d3.zoom') ||
@@ -69,15 +77,18 @@ function isVisualizationFile(filePath: string, code: string): boolean {
 
 /**
  * Check if a boolean value is a common Lambda/Serverless parameter.
+ * These are standard and well-understood by AIs, so they don't count as "traps".
+ *
+ * @param node - The AST node being checked
+ * @param parent - The parent node in the AST
+ * @returns true if the parameter is a standard Lambda boolean
  */
 function isLambdaBooleanParam(
   node: TSESTree.Node,
   parent?: TSESTree.Node
 ): boolean {
-  // Check if the boolean is part of a Lambda event/context
   if (!parent) return false;
 
-  // Common Lambda boolean parameters
   const lambdaBooleans = new Set([
     'isBase64Encoded',
     'isBase64',
@@ -87,7 +98,6 @@ function isLambdaBooleanParam(
     'stageVariables',
   ]);
 
-  // Check if parent is a Property and key is a Lambda boolean
   if (parent.type === 'Property' && parent.key) {
     const key = parent.key as TSESTree.Identifier | TSESTree.Literal;
     const keyName =
@@ -101,7 +111,14 @@ function isLambdaBooleanParam(
 }
 
 /**
- * Traverses the AST and detects structural signals like magic literals and boolean traps.
+ * Traverses the AST and detects structural signals like magic literals,
+ * boolean traps, and ambiguous naming that may reduce AI signal clarity.
+ *
+ * This is a core component of the @aiready/ai-signal-clarity tool.
+ *
+ * @param ctx - Context for the current signal analysis (file, code, options)
+ * @param ast - The parsed AST (either ESTree for TS/JS or Tree-sitter for others)
+ * @returns Object containing detected issues and signal counts
  */
 export function detectStructuralSignals(
   ctx: SignalContext,
@@ -128,10 +145,141 @@ export function detectStructuralSignals(
     filePath.includes('sst.config.ts') ||
     filePath.endsWith('playwright.config.ts');
 
-  // Check if this is a visualization file (D3, charts, etc.)
-  // These files legitimately use many numeric parameters
   const isVisualization = isVisualizationFile(filePath, ctx.code);
 
+  /**
+   * Helper to check magic literals for Tree-sitter nodes.
+   */
+  const checkTreeSitterLiterals = (tsNode: Parser.Node) => {
+    if (tsNode.type === 'number') {
+      const val = parseFloat(tsNode.text);
+      if (!isNaN(val) && isMagicNumber(val)) {
+        signals.magicLiterals++;
+        issues.push({
+          type: IssueType.MagicLiteral,
+          category: CATEGORY_MAGIC_LITERAL,
+          severity: Severity.Minor,
+          message: `Magic number ${tsNode.text} — AI will invent wrong semantics. Extract to a named constant.`,
+          location: {
+            file: filePath,
+            line: tsNode.startPosition.row + 1,
+            column: tsNode.startPosition.column,
+          },
+          suggestion: `const MEANINGFUL_NAME = ${tsNode.text};`,
+        });
+      }
+    } else if (tsNode.type === 'string' || tsNode.type === 'string_literal') {
+      const val = tsNode.text.replace(/['"]/g, '');
+      const isKey =
+        tsNode.parent?.type?.includes('pair') ||
+        tsNode.parent?.type === 'assignment_expression';
+      const isImport =
+        tsNode.parent?.type?.toLowerCase().includes('import') ||
+        tsNode.parent?.type?.toLowerCase().includes('require') ||
+        tsNode.parent?.type?.toLowerCase().includes('use');
+      const parentName = tsNode.parent?.childForFieldName('name')?.text || '';
+      const isNamedConstant = /^[A-Z0-9_]{2,}$/.test(parentName);
+
+      if (
+        !isKey &&
+        !isImport &&
+        !isNamedConstant &&
+        isRedundantTypeConstant(parentName, val)
+      ) {
+        issues.push({
+          type: IssueType.AiSignalClarity,
+          category: CATEGORY_REDUNDANT_TYPE_CONSTANT,
+          severity: Severity.Minor,
+          message: `Redundant type constant — in modern AI-native code, use literals or centralized union types for transparency.`,
+          location: { file: filePath, line: tsNode.startPosition.row + 1 },
+          suggestion: `Use '${val}' directly in your schema.`,
+        });
+      } else if (
+        !isKey &&
+        !isImport &&
+        !isNamedConstant &&
+        isMagicString(val)
+      ) {
+        const isDomain =
+          domainVocabulary && domainVocabulary.has(val.toLowerCase());
+        if (!isDomain) {
+          signals.magicLiterals++;
+          issues.push({
+            type: IssueType.MagicLiteral,
+            category: CATEGORY_MAGIC_LITERAL,
+            severity: Severity.Info,
+            message: `Magic string "${val}" — intent is ambiguous to AI. Consider a named constant.`,
+            location: { file: filePath, line: tsNode.startPosition.row + 1 },
+          });
+        }
+      }
+    }
+  };
+
+  /**
+   * Helper to check for boolean traps.
+   */
+  const checkBooleanTraps = (node: any, parent: any, isTreeSitter: boolean) => {
+    if (options.checkBooleanTraps === false) return;
+    const isLambdaContext = isLambdaHandlerFile(filePath);
+
+    if (isTreeSitter) {
+      if (node.type === 'argument_list') {
+        const hasBool = node.namedChildren?.some(
+          (c: any) =>
+            c.type === 'true' ||
+            c.type === 'false' ||
+            (c.type === 'boolean' && (c.text === 'true' || c.text === 'false'))
+        );
+        if (hasBool && !isLambdaContext) {
+          signals.booleanTraps++;
+          issues.push({
+            type: IssueType.BooleanTrap,
+            category: CATEGORY_BOOLEAN_TRAP,
+            severity: Severity.Major,
+            message: `Boolean trap: positional boolean argument at call site. AI inverts intent ~30% of the time.`,
+            location: {
+              file: filePath,
+              line: (node.startPosition?.row || 0) + 1,
+            },
+            suggestion:
+              'Replace boolean arg with a named options object or separate functions.',
+          });
+        }
+      }
+    } else {
+      const esNode = node as TSESTree.Node;
+      if (esNode.type === 'CallExpression') {
+        const hasBool = esNode.arguments.some(
+          (arg: any) => arg.type === 'Literal' && typeof arg.value === 'boolean'
+        );
+        if (hasBool) {
+          const isLambdaBool = esNode.arguments.some((arg: any) =>
+            isLambdaBooleanParam(arg, parent)
+          );
+          const isUseStateCall =
+            esNode.callee?.type === 'Identifier' &&
+            esNode.callee?.name === 'useState';
+          if (!isLambdaContext && !isLambdaBool && !isUseStateCall) {
+            signals.booleanTraps++;
+            issues.push({
+              type: IssueType.BooleanTrap,
+              category: CATEGORY_BOOLEAN_TRAP,
+              severity: Severity.Major,
+              message: `Boolean trap: positional boolean argument at call site. AI inverts intent ~30% of the time.`,
+              location: { file: filePath, line: esNode.loc?.start.line || 1 },
+              suggestion:
+                'Replace boolean arg with a named options object or separate functions.',
+            });
+          }
+        }
+      }
+    }
+  };
+
+  /**
+   * Main visitor function for AST traversal.
+   */
   const visitNode = (
     node: TSESTree.Node | Parser.Node,
     parent?: TSESTree.Node | Parser.Node,
@@ -141,108 +289,23 @@ export function detectStructuralSignals(
 
     const isTreeSitter = 'namedChildren' in node;
 
-    // Skip magic literal checks for config files and visualization files
-    // Config files intentionally use strings, visualization files use many numeric params
+    // --- Magic Literals ---
     if (
       !isConfigFile &&
       !isVisualization &&
       options.checkMagicLiterals !== false
     ) {
-      // Tree-sitter (Python, Java, etc.)
       if (isTreeSitter) {
-        const tsNode = node as Parser.Node;
-        if (tsNode.type === 'number') {
-          const val = parseFloat(tsNode.text);
-          if (!isNaN(val) && isMagicNumber(val)) {
-            signals.magicLiterals++;
-            issues.push({
-              type: IssueType.MagicLiteral,
-              category: CATEGORY_MAGIC_LITERAL,
-              severity: Severity.Minor,
-              message: `Magic number ${tsNode.text} — AI will invent wrong semantics. Extract to a named constant.`,
-              location: {
-                file: filePath,
-                line: tsNode.startPosition.row + 1,
-                column: tsNode.startPosition.column,
-              },
-              suggestion: `const MEANINGFUL_NAME = ${tsNode.text};`,
-            });
-          }
-        } else if (
-          tsNode.type === 'string' ||
-          tsNode.type === 'string_literal'
-        ) {
-          const val = tsNode.text.replace(/['"]/g, '');
-          // Heuristic: ignore if it's likely a key in a map/dictionary (Tree-sitter)
-          const isKey =
-            tsNode.parent?.type?.includes('pair') ||
-            tsNode.parent?.type === 'assignment_expression';
-
-          // Skip if it's an import/require/use statement (Tree-sitter)
-          const isImport =
-            tsNode.parent?.type?.toLowerCase().includes('import') ||
-            tsNode.parent?.type?.toLowerCase().includes('require') ||
-            tsNode.parent?.type?.toLowerCase().includes('use');
-
-          const parentName =
-            tsNode.parent?.childForFieldName('name')?.text || '';
-
-          const isNamedConstant = /^[A-Z0-9_]{2,}$/.test(parentName);
-
-          if (
-            !isKey &&
-            !isImport &&
-            !isNamedConstant &&
-            isRedundantTypeConstant(parentName, val)
-          ) {
-            issues.push({
-              type: IssueType.AiSignalClarity,
-              category: CATEGORY_REDUNDANT_TYPE_CONSTANT,
-              severity: Severity.Minor,
-              message: `Redundant type constant — in modern AI-native code, use literals or centralized union types for transparency.`,
-              location: {
-                file: filePath,
-                line: tsNode.startPosition.row + 1,
-              },
-              suggestion: `Use '${val}' directly in your schema.`,
-            });
-          } else if (
-            !isKey &&
-            !isImport &&
-            !isNamedConstant &&
-            isMagicString(val)
-          ) {
-            // Check if this is a domain-specific term
-            const isDomain =
-              domainVocabulary && domainVocabulary.has(val.toLowerCase());
-
-            if (!isDomain) {
-              signals.magicLiterals++;
-              issues.push({
-                type: IssueType.MagicLiteral,
-                category: CATEGORY_MAGIC_LITERAL,
-                severity: Severity.Info,
-                message: `Magic string "${val}" — intent is ambiguous to AI. Consider a named constant.`,
-                location: {
-                  file: filePath,
-                  line: tsNode.startPosition.row + 1,
-                },
-              });
-            }
-          }
-        }
-      }
-      // ESTree (TypeScript, JavaScript)
-      else {
+        checkTreeSitterLiterals(node as Parser.Node);
+      } else {
         const esNode = node as TSESTree.Node;
         const esParent = parent as TSESTree.Node | undefined;
 
         if (esNode.type === 'Literal') {
+          // Complex heuristic to identify named constants in VariableDeclarators
           let isNamedConstant = false;
-
-          // Check if this literal is part of a constant declaration (possibly nested in Array/Set/Object)
           let depth = 0;
-          let p: TSESTree.Node | undefined = esParent;
+          let p: any = esParent;
           while (p && depth < 10) {
             if (
               p.type === 'VariableDeclarator' &&
@@ -262,90 +325,57 @@ export function detectStructuralSignals(
                 'TSTypeAssertion',
               ].includes(p.type)
             ) {
-              p = (p as { parent?: TSESTree.Node }).parent;
+              p = p.parent;
               depth++;
-            } else {
-              break;
-            }
-          }
-
-          // Fallback for manual recursion where .parent might not be set on nodes
-          if (!isNamedConstant && esParent) {
-            isNamedConstant =
-              esParent.type === 'VariableDeclarator' &&
-              esParent.id.type === 'Identifier' &&
-              /^[A-Z0-9_]{2,}$/.test(esParent.id.name);
+            } else break;
           }
 
           const isObjectKey =
             esParent?.type === 'Property' && keyInParent === 'key';
-
           const isJSXAttribute = esParent?.type === 'JSXAttribute';
-
-          // Skip magic literal check for import/export sources (Category 1)
           const isImportSource =
             (esParent?.type === 'ImportDeclaration' ||
               esParent?.type === 'ExportNamedDeclaration' ||
               esParent?.type === 'ExportAllDeclaration') &&
             keyInParent === 'source';
-
-          // Skip magic literal check for common require arg (Category 1)
           const isRequireArg =
             esParent?.type === 'CallExpression' &&
             esParent.callee?.type === 'Identifier' &&
             esParent.callee?.name === 'require';
 
-          // Check if this is a value in a JSX style object (Issue: Context-Blind CSS analysis)
           let isStyleValue = false;
           if (esParent?.type === 'Property' && keyInParent === 'value') {
-            let p: TSESTree.Node | undefined = (
-              esParent as { parent?: TSESTree.Node }
-            ).parent; // ObjectExpression
+            let p: any = esParent.parent;
             while (p && p.type === 'ObjectExpression') {
-              const grandParent: TSESTree.Node | undefined = (
-                p as { parent?: TSESTree.Node }
-              ).parent;
-              if (grandParent?.type === 'JSXExpressionContainer') {
-                const attr = grandParent.parent;
-                if (
-                  attr?.type === 'JSXAttribute' &&
-                  attr.name?.type === 'JSXIdentifier' &&
-                  attr.name.name === 'style'
-                ) {
-                  isStyleValue = true;
-                  break;
-                }
+              const grandParent = p.parent;
+              if (
+                grandParent?.type === 'JSXExpressionContainer' &&
+                grandParent.parent?.type === 'JSXAttribute' &&
+                grandParent.parent.name?.name === 'style'
+              ) {
+                isStyleValue = true;
+                break;
               }
-              // Could be nested: style={{ base: { display: 'flex' } }}
               p =
                 grandParent?.type === 'Property'
-                  ? (grandParent as { parent?: TSESTree.Node }).parent
+                  ? grandParent.parent
                   : undefined;
             }
           }
 
           const esLiteral = esNode as TSESTree.Literal;
-          const redundantType =
-            typeof esLiteral.value === 'string'
-              ? isRedundantTypeConstant(
-                  esParent?.type === 'VariableDeclarator' &&
-                    esParent.id.type === 'Identifier'
-                    ? esParent.id.name
-                    : '',
-                  esLiteral.value
-                )
-              : false;
-
-          if (redundantType) {
+          if (
+            typeof esLiteral.value === 'string' &&
+            isRedundantTypeConstant(
+              (esParent as any).id?.name || '',
+              esLiteral.value
+            )
+          ) {
             issues.push({
               type: IssueType.AiSignalClarity,
               category: CATEGORY_REDUNDANT_TYPE_CONSTANT,
               severity: Severity.Minor,
-              message: `Redundant type constant "${
-                (esParent as { id?: { name?: string } }).id?.name
-              }" = '${
-                esLiteral.value
-              }' — in modern AI-native code, use literals or centralized union types for transparency.`,
+              message: `Redundant type constant "${(esParent as any).id?.name}" = '${esLiteral.value}' — in modern AI-native code, use literals or centralized union types for transparency.`,
               location: {
                 file: filePath,
                 line: esLiteral.loc?.start.line || 1,
@@ -353,53 +383,53 @@ export function detectStructuralSignals(
               suggestion: `Use '${esLiteral.value}' directly in your schema.`,
             });
           } else if (
-            isNamedConstant ||
-            isObjectKey ||
-            isJSXAttribute ||
-            isImportSource ||
-            isRequireArg ||
-            isStyleValue ||
-            (isConfigFile && typeof esLiteral.value === 'string')
+            !(
+              isNamedConstant ||
+              isObjectKey ||
+              isJSXAttribute ||
+              isImportSource ||
+              isRequireArg ||
+              isStyleValue ||
+              (isConfigFile && typeof esLiteral.value === 'string')
+            )
           ) {
-            // Skip magic literal check for these contextually safe literals
-          } else if (
-            typeof esLiteral.value === 'number' &&
-            isMagicNumber(esLiteral.value)
-          ) {
-            signals.magicLiterals++;
-            issues.push({
-              type: IssueType.MagicLiteral,
-              category: CATEGORY_MAGIC_LITERAL,
-              severity: Severity.Minor,
-              message: `Magic number ${esLiteral.value} — AI will invent wrong semantics. Extract to a named constant.`,
-              location: {
-                file: filePath,
-                line: esLiteral.loc?.start.line || 1,
-                column: esLiteral.loc?.start.column,
-              },
-              suggestion: `const MEANINGFUL_NAME = ${esLiteral.value};`,
-            });
-          } else if (
-            typeof esLiteral.value === 'string' &&
-            isMagicString(esLiteral.value)
-          ) {
-            // Check if this is a domain-specific term
-            const isDomain =
-              domainVocabulary &&
-              domainVocabulary.has(esLiteral.value.toLowerCase());
-
-            if (!isDomain) {
+            if (
+              typeof esLiteral.value === 'number' &&
+              isMagicNumber(esLiteral.value)
+            ) {
               signals.magicLiterals++;
               issues.push({
                 type: IssueType.MagicLiteral,
                 category: CATEGORY_MAGIC_LITERAL,
-                severity: Severity.Info,
-                message: `Magic string "${esLiteral.value}" — intent is ambiguous to AI. Consider a named constant.`,
+                severity: Severity.Minor,
+                message: `Magic number ${esLiteral.value} — AI will invent wrong semantics. Extract to a named constant.`,
                 location: {
                   file: filePath,
                   line: esLiteral.loc?.start.line || 1,
+                  column: esLiteral.loc?.start.column,
                 },
+                suggestion: `const MEANINGFUL_NAME = ${esLiteral.value};`,
               });
+            } else if (
+              typeof esLiteral.value === 'string' &&
+              isMagicString(esLiteral.value)
+            ) {
+              const isDomain =
+                domainVocabulary &&
+                domainVocabulary.has(esLiteral.value.toLowerCase());
+              if (!isDomain) {
+                signals.magicLiterals++;
+                issues.push({
+                  type: IssueType.MagicLiteral,
+                  category: CATEGORY_MAGIC_LITERAL,
+                  severity: Severity.Info,
+                  message: `Magic string "${esLiteral.value}" — intent is ambiguous to AI. Consider a named constant.`,
+                  location: {
+                    file: filePath,
+                    line: esLiteral.loc?.start.line || 1,
+                  },
+                });
+              }
             }
           }
         }
@@ -407,81 +437,10 @@ export function detectStructuralSignals(
     }
 
     // --- Boolean Traps ---
-    if (options.checkBooleanTraps !== false) {
-      const isLambdaContext = isLambdaHandlerFile(filePath);
-
-      // Tree-sitter
-      if (isTreeSitter) {
-        const tsNode = node as Parser.Node;
-        if (tsNode.type === 'argument_list') {
-          const hasBool = tsNode.namedChildren?.some(
-            (c: Parser.Node) =>
-              c.type === 'true' ||
-              c.type === 'false' ||
-              (c.type === 'boolean' &&
-                (c.text === 'true' || c.text === 'false'))
-          );
-          if (hasBool) {
-            // Skip if this is a Lambda context
-            if (!isLambdaContext) {
-              signals.booleanTraps++;
-              issues.push({
-                type: IssueType.BooleanTrap,
-                category: CATEGORY_BOOLEAN_TRAP,
-                severity: Severity.Major,
-                message: `Boolean trap: positional boolean argument at call site. AI inverts intent ~30% of the time.`,
-                location: {
-                  file: filePath,
-                  line: (tsNode.startPosition?.row || 0) + 1,
-                },
-                suggestion:
-                  'Replace boolean arg with a named options object or separate functions.',
-              });
-            }
-          }
-        }
-      }
-      // ESTree
-      else {
-        const esNode = node as TSESTree.Node;
-        const esParent = parent as TSESTree.Node | undefined;
-        if (esNode.type === 'CallExpression') {
-          const hasBool = esNode.arguments.some(
-            (arg: TSESTree.Node) =>
-              arg.type === 'Literal' && typeof arg.value === 'boolean'
-          );
-          if (hasBool) {
-            // Check if this is a Lambda-specific boolean
-            const isLambdaBool = esNode.arguments.some((arg: TSESTree.Node) =>
-              isLambdaBooleanParam(arg, esParent)
-            );
-            const isUseStateCall =
-              esNode.callee?.type === 'Identifier' &&
-              esNode.callee?.name === 'useState';
-
-            if (!isLambdaContext && !isLambdaBool && !isUseStateCall) {
-              signals.booleanTraps++;
-              issues.push({
-                type: IssueType.BooleanTrap,
-                category: CATEGORY_BOOLEAN_TRAP,
-                severity: Severity.Major,
-                message: `Boolean trap: positional boolean argument at call site. AI inverts intent ~30% of the time.`,
-                location: {
-                  file: filePath,
-                  line: esNode.loc?.start.line || 1,
-                },
-                suggestion:
-                  'Replace boolean arg with a named options object or separate functions.',
-              });
-            }
-          }
-        }
-      }
-    }
+    checkBooleanTraps(node, parent, isTreeSitter);
 
     // --- Ambiguous Names ---
     if (options.checkAmbiguousNames !== false) {
-      // Tree-sitter
       if (isTreeSitter) {
         const tsNode = node as Parser.Node;
         if (tsNode.type === 'variable_declarator') {
@@ -493,33 +452,26 @@ export function detectStructuralSignals(
               category: CATEGORY_AMBIGUOUS_NAME,
               severity: Severity.Info,
               message: `Ambiguous variable name "${nameNode.text}" — AI intent is unclear.`,
-              location: {
-                file: filePath,
-                line: tsNode.startPosition.row + 1,
-              },
+              location: { file: filePath, line: tsNode.startPosition.row + 1 },
             });
           }
         }
-      }
-      // ESTree
-      else {
+      } else {
         const esNode = node as TSESTree.Node;
         if (
           esNode.type === 'VariableDeclarator' &&
           esNode.id.type === 'Identifier'
         ) {
           if (isAmbiguousName(esNode.id.name)) {
-            // Relax for 'data' when initialized from obvious sources (Issue: Universal pattern context)
             const isDataFromJson =
               esNode.id.name === 'data' &&
               esNode.init &&
               ctx.code
                 .slice(
-                  (esNode.init as { range?: [number, number] }).range?.[0] || 0,
-                  (esNode.init as { range?: [number, number] }).range?.[1] || 0
+                  (esNode.init as any).range?.[0] || 0,
+                  (esNode.init as any).range?.[1] || 0
                 )
                 .includes('.json()');
-
             if (!isDataFromJson) {
               signals.ambiguousNames++;
               issues.push({
@@ -527,10 +479,7 @@ export function detectStructuralSignals(
                 category: CATEGORY_AMBIGUOUS_NAME,
                 severity: Severity.Info,
                 message: `Ambiguous variable name "${esNode.id.name}" — AI intent is unclear.`,
-                location: {
-                  file: filePath,
-                  line: esNode.loc?.start.line || 1,
-                },
+                location: { file: filePath, line: esNode.loc?.start.line || 1 },
               });
             }
           }
@@ -555,23 +504,13 @@ export function detectStructuralSignals(
       maxCallbackDepth = Math.max(maxCallbackDepth, callbackDepth);
     }
 
-    // Recurse Tree-sitter
+    // Recurse children
     if ('namedChildren' in node) {
-      for (const child of node.namedChildren) {
-        visitNode(child, node);
-      }
-    }
-    // Recurse ESTree
-    else {
-      const estreeNode = node as TSESTree.Node & { [key: string]: any };
+      for (const child of node.namedChildren) visitNode(child, node);
+    } else {
+      const estreeNode = node as any;
       for (const key in estreeNode) {
-        if (
-          key === 'parent' ||
-          key === 'loc' ||
-          key === 'range' ||
-          key === 'tokens'
-        )
-          continue;
+        if (['parent', 'loc', 'range', 'tokens'].includes(key)) continue;
         const child = estreeNode[key];
         if (child && typeof child === 'object') {
           if (Array.isArray(child)) {
@@ -589,17 +528,12 @@ export function detectStructuralSignals(
       }
     }
 
-    if (isFunction) {
-      callbackDepth--;
-    }
+    if (isFunction) callbackDepth--;
   };
 
   // Start visiting
-  if ('rootNode' in ast) {
-    visitNode(ast.rootNode); // Tree-sitter
-  } else {
-    visitNode(ast); // ESTree
-  }
+  if ('rootNode' in ast) visitNode(ast.rootNode);
+  else visitNode(ast as TSESTree.Node);
 
   if (
     options.checkDeepCallbacks !== false &&
@@ -611,10 +545,7 @@ export function detectStructuralSignals(
       category: CATEGORY_DEEP_CALLBACK,
       severity: Severity.Major,
       message: `Deeply nested logic (depth ${maxCallbackDepth}) — AI loses control flow context beyond ${CALLBACK_DEPTH_THRESHOLD} levels.`,
-      location: {
-        file: filePath,
-        line: 1,
-      },
+      location: { file: filePath, line: 1 },
       suggestion:
         'Extract nested logic into named functions or flatten the structure.',
     });

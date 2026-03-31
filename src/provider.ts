@@ -11,7 +11,7 @@ import { AiSignalClarityOptions, AiSignalClarityReport } from './types';
 /**
  * AI Signal Clarity Tool Provider
  */
-export const AiSignalClarityProvider = createProvider({
+export const AI_SIGNAL_CLARITY_PROVIDER = createProvider({
   id: ToolName.AiSignalClarity,
   alias: ['ai-signal', 'clarity', 'hallucination'],
   version: '0.9.5',
