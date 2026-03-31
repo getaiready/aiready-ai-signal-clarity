@@ -213,9 +213,34 @@ export function detectStructuralSignals(
         tsNode.parent?.type?.toLowerCase().includes('import') ||
         tsNode.parent?.type?.toLowerCase().includes('require') ||
         tsNode.parent?.type?.toLowerCase().includes('use');
-      const parentName = tsNode.parent?.childForFieldName('name')?.text || '';
-      const isNamedConstant = /^[A-Z0-9_]{2,}$/.test(parentName);
+      // Walk up the tree to detect named constants (UPPER_SNAKE_CASE variables)
+      // This handles nested structures: objects, arrays, `as const`, type assertions
+      let isNamedConstant = false;
+      let p: any = tsNode.parent;
+      let depth = 0;
+      while (p && depth < 10) {
+        if (p.type === 'variable_declarator') {
+          const nameNode = p.childForFieldName('name');
+          if (nameNode && /^[A-Z0-9_]{2,}$/.test(nameNode.text)) {
+            isNamedConstant = true;
+            break;
+          }
+        }
+        if (
+          [
+            'pair',
+            'object',
+            'array',
+            'as_expression',
+            'type_assertion',
+          ].includes(p.type)
+        ) {
+          p = p.parent;
+          depth++;
+        } else break;
+      }
 
+      const parentName = tsNode.parent?.childForFieldName('name')?.text || '';
       if (
         !isKey &&
         !isImport &&

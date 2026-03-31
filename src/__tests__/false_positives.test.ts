@@ -122,6 +122,50 @@ describe('AI Signal Clarity - False Positives Verification', () => {
     expect(issues.length).toBe(0);
   });
 
+  it('should NOT flag string values inside UPPER_SNAKE_CASE object constants', async () => {
+    const file = createTestFile(
+      'ui-constants.ts',
+      `
+      export const ICON_SIZES = {
+        XS: 'h-3 w-3',
+        SM: 'h-4 w-4',
+        MD: 'h-5 w-5',
+        LG: 'h-6 w-6',
+        XL: 'h-8 w-8',
+      } as const;
+    `
+    );
+
+    const result = await scanFile(file, {
+      rootDir: tmpDir,
+      minSeverity: 'info',
+    });
+    const issues = result.issues.filter((i) => i.category === 'magic-literal');
+
+    expect(issues.length).toBe(0);
+  });
+
+  it('should NOT flag string values inside UPPER_SNAKE_CASE array constants', async () => {
+    const file = createTestFile(
+      'categories.ts',
+      `
+      export const TICKET_CATEGORIES = [
+        'Plumbing',
+        'Electrical',
+        'HVAC',
+      ] as const;
+    `
+    );
+
+    const result = await scanFile(file, {
+      rootDir: tmpDir,
+      minSeverity: 'info',
+    });
+    const issues = result.issues.filter((i) => i.category === 'magic-literal');
+
+    expect(issues.length).toBe(0);
+  });
+
   it('should NOT flag standard tool configurations', async () => {
     const file = createTestFile(
       'playwright.config.ts',
