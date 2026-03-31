@@ -37,6 +37,41 @@ function isLambdaHandlerFile(filePath: string): boolean {
 }
 
 /**
+ * Detect if a file is likely a CLI command file using Commander.js.
+ * These files legitimately use many string literals for option definitions
+ * and descriptions, which shouldn't be flagged as magic strings.
+ *
+ * @param filePath - Path to the file
+ * @param code - Raw source code content
+ * @returns true if the file is likely a CLI command file
+ */
+function isCliCommandFile(filePath: string, code: string): boolean {
+  const normalizedPath = filePath.toLowerCase();
+  const normalizedCode = code.toLowerCase();
+
+  // Check file path patterns
+  if (
+    normalizedPath.includes('/commands/') ||
+    normalizedPath.includes('/cli/') ||
+    normalizedPath.endsWith('.command.ts') ||
+    normalizedPath.endsWith('.command.js')
+  ) {
+    return true;
+  }
+
+  // Check for Commander.js patterns in code
+  if (
+    normalizedCode.includes('.command(') &&
+    normalizedCode.includes('.description(') &&
+    (normalizedCode.includes('.option(') || normalizedCode.includes('.action('))
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Detect if a file is likely a visualization or chart component (D3, Recharts, etc.).
  * These files legitimately use many numeric parameters for positioning, sizing, and
  * geometry calculations, which shouldn't be flagged as magic numbers.
@@ -146,6 +181,7 @@ export function detectStructuralSignals(
     filePath.endsWith('playwright.config.ts');
 
   const isVisualization = isVisualizationFile(filePath, ctx.code);
+  const isCliCommand = isCliCommandFile(filePath, ctx.code);
 
   /**
    * Helper to check magic literals for Tree-sitter nodes.
@@ -293,6 +329,7 @@ export function detectStructuralSignals(
     if (
       !isConfigFile &&
       !isVisualization &&
+      !isCliCommand &&
       options.checkMagicLiterals !== false
     ) {
       if (isTreeSitter) {
@@ -437,7 +474,10 @@ export function detectStructuralSignals(
     }
 
     // --- Boolean Traps ---
-    checkBooleanTraps(node, parent, isTreeSitter);
+    // Skip boolean trap detection for CLI command files (standard pattern)
+    if (!isCliCommand) {
+      checkBooleanTraps(node, parent, isTreeSitter);
+    }
 
     // --- Ambiguous Names ---
     if (options.checkAmbiguousNames !== false) {

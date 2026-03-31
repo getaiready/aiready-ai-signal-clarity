@@ -100,7 +100,22 @@ export function detectExportSignals(
             lowerName
           );
 
-        if (looksPure) {
+        // Skip console output functions - printing IS their expected behavior
+        const isConsoleOutputFunction =
+          lowerName.startsWith('render') ||
+          lowerName.startsWith('print') ||
+          lowerName.startsWith('log') ||
+          lowerName.startsWith('display') ||
+          lowerName.startsWith('show') ||
+          lowerName.startsWith('emit') ||
+          lowerName.startsWith('output') ||
+          lowerName.endsWith('header') ||
+          lowerName.endsWith('footer') ||
+          lowerName.endsWith('summary') ||
+          lowerName.endsWith('block') ||
+          lowerName.endsWith('section');
+
+        if (looksPure && !isConsoleOutputFunction) {
           signals.implicitSideEffects++;
           issues.push({
             type: IssueType.AiSignalClarity,
