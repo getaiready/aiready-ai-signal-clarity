@@ -228,7 +228,11 @@ export async function analyzeTestability(
     }
   }
 
-  if (indexResult.dimensions.dependencyInjectionScore < 60) {
+  // Only flag DI issue if the codebase actually uses classes
+  if (
+    indexResult.dimensions.dependencyInjectionScore < 60 &&
+    aggregated.totalClasses > 0
+  ) {
     issues.push({
       type: IssueType.LowTestability,
       dimension: 'dependency-injection',
