@@ -98,7 +98,7 @@ export class ProvisioningOrchestrator {
         `[Provision] Forking serverlessclaw into ${githubOrg}/${repoName}...`
       );
       const forkResponse = await this.octokit.repos.createFork({
-        owner: 'getaiready',
+        owner: 'serverlessclaw',
         repo: 'serverlessclaw',
         organization: githubOrg,
         name: repoName,

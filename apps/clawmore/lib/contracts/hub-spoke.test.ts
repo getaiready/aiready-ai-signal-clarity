@@ -328,7 +328,7 @@ describe('Hub-Spoke Contract Tests', () => {
       // Verify fork is created from correct source
       expect(mockCreateFork).toHaveBeenCalledWith(
         expect.objectContaining({
-          owner: 'caopengau',
+          owner: 'serverlessclaw',
           repo: 'serverlessclaw',
           organization: 'clawmost',
           name: 'test-node',

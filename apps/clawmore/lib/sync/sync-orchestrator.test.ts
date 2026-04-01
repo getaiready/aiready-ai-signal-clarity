@@ -17,7 +17,7 @@ describe('SyncOrchestrator', () => {
   it('should generate correct git subtree pull command for Hub to Spoke sync', async () => {
     const options = {
       workingDir: '/tmp/test-spoke',
-      hubUrl: 'https://github.com/caopengau/serverlessclaw',
+      hubUrl: 'https://github.com/serverlessclaw/serverlessclaw',
       hubBranch: 'main',
       spokeBranch: 'main',
       prefix: 'core-blueprint',
@@ -47,7 +47,7 @@ describe('SyncOrchestrator', () => {
   it('should generate correct git subtree push command for Spoke to Hub contribution', async () => {
     const options = {
       workingDir: '/tmp/test-spoke',
-      hubUrl: 'https://github.com/caopengau/serverlessclaw',
+      hubUrl: 'https://github.com/serverlessclaw/serverlessclaw',
       hubBranch: 'main',
       spokeBranch: 'main',
       prefix: 'core-blueprint',
