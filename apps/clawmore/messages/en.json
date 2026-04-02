@@ -8,7 +8,7 @@
   },
   "hero": {
     "badge": "Autonomous Infrastructure Platform",
-    "title1": "OpenClaw:",
+    "title1": "ClawMore: OpenClaw but More:",
     "title2": "Self-Evolving",
     "title3": "Infinitely Scaling",
     "description": "The first autonomous system for Multi-Human Multi-Agent Collaboration. OpenClaw automatically synthesizes, optimizes, and evolves your AWS infrastructure."
@@ -63,7 +63,7 @@
       "name": "OSS",
       "badge": "OPEN SOURCE",
       "price": "FREE",
-      "subtext": "Self-hosted OpenClaw",
+      "subtext": "Self-hosted ClawMore",
       "features": [
         "Full source code",
         "Community support",

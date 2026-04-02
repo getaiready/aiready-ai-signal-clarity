@@ -44,10 +44,10 @@ export default function HeroSection({ onOpenBeta }: HeroSectionProps) {
         </div>
 
         <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter mb-4 sm:mb-10 bg-gradient-to-r from-[#00e0ff] to-[#bc00ff] bg-clip-text text-transparent leading-[1.1] sm:leading-[1.1] pb-3 sm:pb-4 drop-shadow-[0_10px_60px_rgba(0,0,0,1)]">
-          OpenClaw
+          ClawMore: OpenClaw but More
           <br />
           <span className="italic text-2xl sm:text-4xl md:text-5xl lg:text-6xl block mt-4 opacity-90">
-            Self-Evolving. Infinitely Scaling. Zero Idle Cost.
+            the self evolving, infinitely scaling, never dying claw.
           </span>
         </h1>
 

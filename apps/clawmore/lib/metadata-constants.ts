@@ -6,7 +6,7 @@ export const ORGANIZATION_JSON_LD = {
   logo: 'https://clawmore.ai/logo.png',
   description:
     "Simple one-click OpenClaw deployment. The world's first autonomous agentic swarm for serverless AWS.",
-  sameAs: ['https://github.com/getaiready/aiready-cli'],
+  sameAs: ['https://github.com/serverlessclaw/serverlessclaw'],
 };
 
 export const WEBSITE_JSON_LD = {
