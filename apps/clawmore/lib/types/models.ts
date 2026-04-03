@@ -34,6 +34,7 @@ export interface UserMetadata {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   stripeMutationSubscriptionItemId?: string;
+  plan?: string;
   suspendedAt?: string;
   resumedAt?: string;
 }

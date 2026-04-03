@@ -23,9 +23,14 @@ if [ "$npm_config_loglevel" = "silent" ]; then
   SILENT=1
 fi
 
+TURBO="./node_modules/.bin/turbo"
+if [ ! -f "$TURBO" ]; then
+  TURBO="turbo"
+fi
+
 if [ "$SILENT" = "1" ]; then
   # Use turbo-compatible silence
-  turbo run "$TASK" "${ARGS[@]}" --output-logs=errors-only
+  $TURBO run "$TASK" "${ARGS[@]}" --output-logs=errors-only
 else
-  turbo run "$TASK" "${ARGS[@]}"
+  $TURBO run "$TASK" "${ARGS[@]}"
 fi

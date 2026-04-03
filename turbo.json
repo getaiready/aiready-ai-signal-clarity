@@ -39,12 +39,12 @@
     "type-check": {
       "dependsOn": ["^build"],
       "inputs": ["src/**/*.ts", "src/**/*.tsx", "tsconfig.json"],
-      "outputs": ["tsconfig.tsbuildinfo"]
+      "outputs": []
     },
     "typecheck": {
       "dependsOn": ["^build"],
       "inputs": ["src/**/*.ts", "src/**/*.tsx", "tsconfig.json"],
-      "outputs": ["tsconfig.tsbuildinfo"]
+      "outputs": []
     },
     "format-check": {
       "inputs": [

@@ -7,15 +7,6 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
-import React from 'react';
-import {
-  MessageSquare,
-  Send,
-  Bell,
-  Settings,
-  ExternalLink,
-} from 'lucide-react';
-
 interface IntegrationsTabProps {
   status: any;
 }
