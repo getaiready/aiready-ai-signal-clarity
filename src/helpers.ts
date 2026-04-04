@@ -24,13 +24,33 @@ export function isAmbiguousName(name: string): boolean {
 }
 
 export function isMagicNumber(value: number): boolean {
-  return !MAGIC_LITERAL_IGNORE.has(value);
+  // Ignore common infrastructure and time constants
+  const infrastructureIgnores = new Set([
+    3600, // 1 hour
+    86400, // 1 day
+    15000,
+    5000,
+    1000, // standard delays/intervals
+    10,
+    20,
+    30, // standard retry/polling limits
+  ]);
+
+  return !MAGIC_LITERAL_IGNORE.has(value) && !infrastructureIgnores.has(value);
 }
 
 export function isMagicString(value: string): boolean {
   if (value.length === 0) return false;
-  if (value.length > 20) return false;
+  if (value.length > 30) return false; // Increased from 20 to allow some ARNs/endpoints
   if (MAGIC_STRING_IGNORE.has(value.toLowerCase())) return false;
+
+  // AWS and Cloud patterns
+  if (/^arn:aws:[a-z0-9-]+:[a-z0-9-]*:[0-9]{12}:/.test(value)) return false; // ARNs
+  if (/^[a-z0-9-]+\.amazonaws\.com$/.test(value)) return false; // Service endpoints
+  if (/^[a-z]{2}-(?:north|south|east|west|central)-[1-3]$/.test(value))
+    return false; // Regions (e.g. us-east-1)
+  if (value === '2012-10-17' || value === '2012-10-27') return false; // IAM Policy versions
+  if (value.startsWith('OrganizationAccountAccessRole')) return false; // AWS default role
 
   if (TAILWIND_PATTERN.test(value) && value.includes('-')) return false;
   if (/^(gpt|claude|gemini|llama|mixtral|anthropic|openai)-/i.test(value))

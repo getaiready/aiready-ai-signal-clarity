@@ -282,6 +282,38 @@ export function detectStructuralSignals(
             esParent.callee?.type === 'Identifier' &&
             esParent.callee?.name === 'require';
 
+          const isIgnoredProperty =
+            esParent?.type === 'Property' &&
+            esParent.key.type === 'Identifier' &&
+            [
+              'region',
+              'endpoint',
+              'Bucket',
+              'RoleArn',
+              'maxRetries',
+              'delayMs',
+              'DurationSeconds',
+              'AccountName',
+              'Email',
+              'RoleName',
+              'ThumbprintList',
+              'Sid',
+              'Effect',
+              'Action',
+              'Resource',
+              'Principal',
+              'Federated',
+              'Url',
+              'ClientIDList',
+              'ResourceId',
+              'ServiceRole',
+              'AccountName',
+              'Key',
+              'Value',
+            ].includes(esParent.key.name);
+
+          const isParserFile = filePath.includes('parser');
+
           let isStyleValue = false;
           if (esParent?.type === 'Property' && keyInParent === 'value') {
             let p: any = esParent.parent;
@@ -329,6 +361,8 @@ export function detectStructuralSignals(
               isImportSource ||
               isRequireArg ||
               isStyleValue ||
+              isIgnoredProperty ||
+              isParserFile ||
               (isConfigFile && typeof esLiteral.value === 'string')
             )
           ) {
