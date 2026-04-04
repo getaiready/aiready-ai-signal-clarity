@@ -83,17 +83,12 @@ export function checkTreeSitterLiterals(
     }
 
     const parentName = tsNode.parent?.childForFieldName('name')?.text || '';
-    if (
-      !isKey &&
-      !isImport &&
-      !isNamedConstant &&
-      isRedundantTypeConstant(parentName, val)
-    ) {
+    if (!isKey && !isImport && isRedundantTypeConstant(parentName, val)) {
       issues.push({
         type: IssueType.AiSignalClarity,
         category: CATEGORY_REDUNDANT_TYPE_CONSTANT,
         severity: Severity.Minor,
-        message: `Redundant type constant — in modern AI-native code, use literals or centralized union types for transparency.`,
+        message: `Redundant type constant '${parentName}' — in modern AI-native code, use literals or centralized union types for transparency.`,
         location: { file: filePath, line: tsNode.startPosition.row + 1 },
         suggestion: `Use '${val}' directly in your schema.`,
       });
@@ -219,6 +214,34 @@ export function checkEsTreeLiterals(
     ].includes(esParent.key.name);
 
   const isParserFile = filePath.includes('parser');
+
+  let parentName = '';
+  if (
+    esParent?.type === 'VariableDeclarator' &&
+    esParent.id.type === 'Identifier'
+  ) {
+    parentName = esParent.id.name;
+  } else if (
+    esParent?.type === 'Property' &&
+    esParent.key.type === 'Identifier'
+  ) {
+    parentName = esParent.key.name;
+  }
+
+  // --- Redundant Type Constants (independent of naming) ---
+  if (
+    typeof esNode.value === 'string' &&
+    isRedundantTypeConstant(parentName, esNode.value)
+  ) {
+    issues.push({
+      type: IssueType.AiSignalClarity,
+      category: CATEGORY_REDUNDANT_TYPE_CONSTANT,
+      severity: Severity.Minor,
+      message: `Redundant type constant '${parentName}' — in modern AI-native code, use literals or centralized union types for transparency.`,
+      location: { file: filePath, line: esNode.loc?.start.line || 1 },
+      suggestion: `Use '${esNode.value}' directly in your code.`,
+    });
+  }
 
   let isStyleValue = false;
   if (esParent?.type === 'Property' && keyInParent === 'value') {
