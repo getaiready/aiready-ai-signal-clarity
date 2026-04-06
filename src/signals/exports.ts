@@ -96,7 +96,7 @@ export function detectExportSignals(
       if (exp.hasSideEffects && !exp.isPure && exp.type === 'function') {
         const lowerName = exp.name.toLowerCase();
         const looksPure =
-          !/(set|update|save|delete|create|write|send|post|sync)/.test(
+          !/(set|update|save|delete|create|write|send|post|sync|mutate)/.test(
             lowerName
           );
 

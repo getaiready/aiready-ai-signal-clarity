@@ -29,7 +29,7 @@ describe('Scanner Advanced Signals', () => {
       
       export function undocumented() {} // Undocumented export
       
-      export function mutate() { // Implicit side effect
+      export function calculate() { // Implicit side effect
         global.x = 1;
       }
       
