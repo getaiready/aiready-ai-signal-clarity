@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { scanFile } from '../scanner';
+import { performSignalClarityScan } from '../scanner';
 import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
@@ -26,7 +26,7 @@ describe('Modern TS Support', () => {
     writeFileSync(testFile, code);
 
     try {
-      const result = await scanFile(testFile);
+      const result = await performSignalClarityScan(testFile);
       expect(result.issues).toBeDefined();
       // Should not crash and should find exports
       expect(result.signals.totalExports).toBe(1);
@@ -46,7 +46,7 @@ describe('Modern TS Support', () => {
     writeFileSync(testFile, code);
 
     try {
-      const result = await scanFile(testFile);
+      const result = await performSignalClarityScan(testFile);
       expect(result.issues).toBeDefined();
       expect(result.signals.totalExports).toBe(1);
     } finally {
@@ -63,7 +63,7 @@ describe('Modern TS Support', () => {
     writeFileSync(testFile, code);
 
     try {
-      const result = await scanFile(testFile);
+      const result = await performSignalClarityScan(testFile);
       const magicLiteralIssues = result.issues.filter(
         (i) => i.type === 'magic-literal'
       );

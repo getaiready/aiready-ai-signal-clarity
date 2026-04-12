@@ -9,7 +9,7 @@ import {
   Severity,
   emitProgress,
 } from '@aiready/core';
-import { scanFile } from './scanner';
+import { performSignalClarityScan } from './scanner';
 import type {
   AiSignalClarityOptions,
   AiSignalClarityReport,
@@ -49,7 +49,7 @@ export async function analyzeAiSignalClarity(
       options.onProgress
     );
 
-    const result = await scanFile(filePath, options);
+    const result = await performSignalClarityScan(filePath, options);
     results.push(result);
     // result.signals is a Record<string, number>, iterate over entries
     for (const [key, value] of Object.entries(result.signals)) {

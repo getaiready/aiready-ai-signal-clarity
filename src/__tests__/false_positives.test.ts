@@ -1,4 +1,4 @@
-import { scanFile } from '../scanner';
+import { performSignalClarityScan } from '../scanner';
 import { join } from 'path';
 import { writeFileSync, mkdirSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
@@ -33,7 +33,7 @@ describe('AI Signal Clarity - False Positives Verification', () => {
     `
     );
 
-    const result = await scanFile(file, {
+    const result = await performSignalClarityScan(file, {
       rootDir: tmpDir,
       minSeverity: 'info',
     });
@@ -69,7 +69,7 @@ describe('AI Signal Clarity - False Positives Verification', () => {
     `
     );
 
-    const result = await scanFile(file, {
+    const result = await performSignalClarityScan(file, {
       rootDir: tmpDir,
       minSeverity: 'info',
     });
@@ -92,7 +92,7 @@ describe('AI Signal Clarity - False Positives Verification', () => {
     `
     );
 
-    const result = await scanFile(file, {
+    const result = await performSignalClarityScan(file, {
       rootDir: tmpDir,
       minSeverity: 'info',
     });
@@ -113,7 +113,7 @@ describe('AI Signal Clarity - False Positives Verification', () => {
     `
     );
 
-    const result = await scanFile(file, {
+    const result = await performSignalClarityScan(file, {
       rootDir: tmpDir,
       minSeverity: 'info',
     });
@@ -136,7 +136,7 @@ describe('AI Signal Clarity - False Positives Verification', () => {
     `
     );
 
-    const result = await scanFile(file, {
+    const result = await performSignalClarityScan(file, {
       rootDir: tmpDir,
       minSeverity: 'info',
     });
@@ -157,7 +157,7 @@ describe('AI Signal Clarity - False Positives Verification', () => {
     `
     );
 
-    const result = await scanFile(file, {
+    const result = await performSignalClarityScan(file, {
       rootDir: tmpDir,
       minSeverity: 'info',
     });
@@ -185,7 +185,7 @@ describe('AI Signal Clarity - False Positives Verification', () => {
     `
     );
 
-    const result = await scanFile(file, {
+    const result = await performSignalClarityScan(file, {
       rootDir: tmpDir,
       minSeverity: 'info',
     });

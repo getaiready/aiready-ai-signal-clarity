@@ -17,10 +17,16 @@ import { detectStructuralSignals } from './signals/visitor';
 import type { SignalContext, SignalResult } from './signals/types';
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+const WILDCARD_IMPORT = '*';
+const DEFAULT_EXPORT = 'default';
+
+// ---------------------------------------------------------------------------
 // Main scanner
 // ---------------------------------------------------------------------------
 
-export async function scanFile(
+export async function performSignalClarityScan(
   filePath: string,
   options: AiSignalClarityOptions = { rootDir: '.' }
 ): Promise<FileAiSignalClarityResult> {
@@ -46,13 +52,13 @@ export async function scanFile(
     const domainVocabulary = new Set<string>();
     for (const imp of parseResult.imports) {
       for (const spec of imp.specifiers) {
-        if (spec && spec !== '*' && spec !== 'default') {
+        if (spec && spec !== WILDCARD_IMPORT && spec !== DEFAULT_EXPORT) {
           domainVocabulary.add(spec.toLowerCase());
         }
       }
     }
     for (const exp of parseResult.exports) {
-      if (exp.name && exp.name !== 'default') {
+      if (exp.name && exp.name !== DEFAULT_EXPORT) {
         domainVocabulary.add(exp.name.toLowerCase());
       }
     }

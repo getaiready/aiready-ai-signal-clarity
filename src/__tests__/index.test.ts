@@ -13,9 +13,9 @@ describe('AiSignalClarity Index Exports', () => {
     expect(typeof index.calculateAiSignalClarityScore).toBe('function');
   });
 
-  it('should export scanFile function', () => {
-    expect(index.scanFile).toBeDefined();
-    expect(typeof index.scanFile).toBe('function');
+  it('should export performSignalClarityScan function', () => {
+    expect(index.performSignalClarityScan).toBeDefined();
+    expect(typeof index.performSignalClarityScan).toBe('function');
   });
 
   it('should export AI_SIGNAL_CLARITY_PROVIDER', () => {

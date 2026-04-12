@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { scanFile } from '../scanner';
+import { performSignalClarityScan } from '../scanner';
 import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
@@ -26,7 +26,7 @@ describe('BigInt Clarity Support', () => {
     writeFileSync(testFile, code);
 
     try {
-      const result = await scanFile(testFile);
+      const result = await performSignalClarityScan(testFile);
       const magicLiteralIssues = result.issues.filter(
         (i) => i.type === 'magic-literal'
       );
@@ -45,7 +45,7 @@ describe('BigInt Clarity Support', () => {
     writeFileSync(testFile, code);
 
     try {
-      const result = await scanFile(testFile);
+      const result = await performSignalClarityScan(testFile);
       const magicLiteralIssues = result.issues.filter(
         (i) => i.type === 'magic-literal'
       );

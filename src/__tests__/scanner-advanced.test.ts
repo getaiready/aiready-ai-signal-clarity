@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { scanFile } from '../scanner';
+import { performSignalClarityScan } from '../scanner';
 import { join } from 'path';
 import { writeFileSync, mkdirSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
@@ -57,7 +57,7 @@ describe('Scanner Advanced Signals', () => {
     `;
     writeFileSync(filePath, code);
 
-    const result = await scanFile(filePath);
+    const result = await performSignalClarityScan(filePath);
 
     expect((result.signals as any).magicLiterals).toBeGreaterThanOrEqual(2);
     expect((result.signals as any).undocumentedExports).toBeGreaterThanOrEqual(
@@ -73,7 +73,9 @@ describe('Scanner Advanced Signals', () => {
   });
 
   it('handles non-existent files gracefully', async () => {
-    const result = await scanFile(join(tmpDir, 'non-existent.ts'));
+    const result = await performSignalClarityScan(
+      join(tmpDir, 'non-existent.ts')
+    );
     expect(result.issues).toHaveLength(0);
     expect((result.signals as any).totalSymbols).toBe(0);
   });

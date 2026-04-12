@@ -13,13 +13,13 @@ vi.mock('@aiready/core', async () => {
 });
 
 vi.mock('../scanner', () => ({
-  scanFile: vi.fn(),
+  performSignalClarityScan: vi.fn(),
 }));
 
 describe('analyzeAiSignalClarity', () => {
   it('should analyze files and aggregate signals', async () => {
     vi.mocked(core.scanFiles).mockResolvedValue(['file1.ts', 'file2.ts']);
-    vi.mocked(scanner.scanFile).mockResolvedValue({
+    vi.mocked(scanner.performSignalClarityScan).mockResolvedValue({
       filePath: 'file1.ts',
       fileName: 'file1.ts',
       issues: [
@@ -58,7 +58,7 @@ describe('analyzeAiSignalClarity', () => {
 
   it('should respect minSeverity option', async () => {
     vi.mocked(core.scanFiles).mockResolvedValue(['file1.ts']);
-    vi.mocked(scanner.scanFile).mockResolvedValue({
+    vi.mocked(scanner.performSignalClarityScan).mockResolvedValue({
       filePath: 'file1.ts',
       fileName: 'file1.ts',
       issues: [

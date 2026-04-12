@@ -6,7 +6,10 @@ ToolRegistry.register(AI_SIGNAL_CLARITY_PROVIDER);
 
 export { analyzeAiSignalClarity } from './analyzer';
 export { calculateAiSignalClarityScore } from './scoring';
-export { scanFile } from './scanner';
+export {
+  performSignalClarityScan,
+  performSignalClarityScan as scanFile,
+} from './scanner';
 export { AI_SIGNAL_CLARITY_PROVIDER };
 export type {
   AiSignalClarityOptions,

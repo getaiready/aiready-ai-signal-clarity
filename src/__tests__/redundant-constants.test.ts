@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scanFile } from '../scanner';
+import { performSignalClarityScan } from '../scanner';
 import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
@@ -22,7 +22,7 @@ describe('Redundant Type Constants', () => {
     writeFileSync(testFile, content);
 
     try {
-      const result = await scanFile(testFile);
+      const result = await performSignalClarityScan(testFile);
       const redundantIssues = result.issues.filter(
         (i) => i.category === 'redundant-type-constant'
       );
@@ -45,7 +45,7 @@ describe('Redundant Type Constants', () => {
     writeFileSync(testFile, content);
 
     try {
-      const result = await scanFile(testFile);
+      const result = await performSignalClarityScan(testFile);
       const redundantIssues = result.issues.filter(
         (i) => i.category === 'redundant-type-constant'
       );
